@@ -179,11 +179,11 @@ function App() {
             <Map className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-base font-black tracking-tight bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">
-              FCTX Japan Data Map
+            <h1 className="text-base font-black tracking-tight bg-gradient-to-r from-indigo-600 to-rose-500 dark:from-indigo-400 dark:to-rose-450 bg-clip-text text-transparent">
+              FCTX Japan Utopia Finder
             </h1>
             <p className="text-[9px] text-slate-400 dark:text-slate-500 font-bold tracking-wider uppercase">
-              都道府県別データ可見化ダッシュボード
+              移住・2拠点居住 理想郷診断システム
             </p>
           </div>
         </div>
@@ -319,7 +319,7 @@ function App() {
 
       {/* フッター */}
       <footer className="border-t border-slate-200/50 dark:border-slate-800/50 py-2 text-center text-[10px] text-slate-400 dark:text-slate-600 shrink-0">
-        <p>&copy; {new Date().getFullYear()} FCTX Japan Data Map. All rights reserved.</p>
+        <p>&copy; {new Date().getFullYear()} FCTX Japan Utopia Finder. All rights reserved.</p>
       </footer>
     </div>
   );

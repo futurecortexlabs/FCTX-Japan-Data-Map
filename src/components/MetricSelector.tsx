@@ -10,56 +10,56 @@ interface MetricSelectorProps {
 export const METRIC_CONFIGS: Record<MetricType, MetricConfig> = {
   totalScore: {
     key: 'totalScore',
-    label: '総合スコア (偏差値平均)',
+    label: '総合スコア (移住ポテンシャル)',
     unit: '点',
     scoreKey: 'totalScore',
     category: 'basic',
   },
   landPrice: {
     key: 'landPrice',
-    label: '平均地価',
+    label: '住居費の安さ (平均地価)',
     unit: '円/㎡',
     scoreKey: 'landPriceScore',
     category: 'basic',
   },
   population: {
     key: 'population',
-    label: '人口',
+    label: '生活利便性 (人口規模)',
     unit: '人',
     scoreKey: 'populationScore',
     category: 'basic',
   },
   listedCompanies: {
     key: 'listedCompanies',
-    label: '上場企業数',
+    label: '雇用の豊富さ (上場企業数)',
     unit: '社',
     scoreKey: 'listedCompanyScore',
     category: 'basic',
   },
   starbucksCount: {
     key: 'starbucksCount',
-    label: 'スタバ店舗数',
+    label: 'カフェ充実度 (スタバ店舗数)',
     unit: '店舗',
     scoreKey: 'starbucksScore',
     category: 'lifestyle',
   },
   ramenCount: {
     key: 'ramenCount',
-    label: 'ラーメン店舗数',
+    label: 'グルメ充実度 (ラーメン店舗数)',
     unit: '店舗',
     scoreKey: 'ramenScore',
     category: 'lifestyle',
   },
   attractiveness: {
     key: 'attractiveness',
-    label: '魅力度スコア',
+    label: '観光・レジャー魅力度',
     unit: '点',
     scoreKey: 'attractivenessScore',
     category: 'environment',
   },
   sunshineHours: {
     key: 'sunshineHours',
-    label: '年間日照時間',
+    label: '気候の快適さ (年間日照時間)',
     unit: '時間',
     scoreKey: 'sunshineHoursScore',
     category: 'environment',
@@ -75,9 +75,9 @@ export const MetricSelector: React.FC<MetricSelectorProps> = ({
 
 
   const categories = [
-    { key: 'basic' as const, label: '都市力' },
-    { key: 'lifestyle' as const, label: 'ライフ' },
-    { key: 'environment' as const, label: '環境・観光' },
+    { key: 'basic' as const, label: '都市利便・雇用' },
+    { key: 'lifestyle' as const, label: '食・カルチャー' },
+    { key: 'environment' as const, label: 'レジャー・気候' },
   ];
 
   const items = [

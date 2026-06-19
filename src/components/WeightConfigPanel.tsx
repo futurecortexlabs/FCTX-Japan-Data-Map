@@ -9,9 +9,9 @@ interface WeightConfigPanelProps {
 
 export const PRESETS: { label: string; icon: any; desc: string; weights: MetricWeights }[] = [
   {
-    label: '都会スペック重視',
+    label: '都会利便性＆仕事重視',
     icon: Building,
-    desc: 'スタバなどのユニーク指標を0にし、基礎都市力（地価・人口・企業数）100%のランキングを表示',
+    desc: '生活利便性や求人の多さを最優先し、カルチャー・レジャー指標のウェイトを0にした都市型移住プラン',
     weights: {
       starbucksCount: 0,
       ramenCount: 0,
@@ -20,9 +20,9 @@ export const PRESETS: { label: string; icon: any; desc: string; weights: MetricW
     },
   },
   {
-    label: 'カルチャー・食重視',
+    label: 'カルチャー＆グルメ移住',
     icon: Zap,
-    desc: 'スターバックスやラーメン店舗数の比重を最大化し、ライフスタイルに特化したランキングを表示',
+    desc: 'カフェ文化や美味しいラーメン店など、ローカルでの豊かな暮らしと食を最優先するライフスタイルプラン',
     weights: {
       starbucksCount: 50,
       ramenCount: 50,
@@ -31,9 +31,9 @@ export const PRESETS: { label: string; icon: any; desc: string; weights: MetricW
     },
   },
   {
-    label: '観光・環境重視',
+    label: 'リゾート＆スローライフ',
     icon: Sun,
-    desc: '地域の魅力度と日照時間（晴れやすさ）を重視した、観光・移住検討ランキング',
+    desc: '年間を通した晴天率（日照時間）と、観光地としての楽しさを重視した快適なスローライフプラン',
     weights: {
       starbucksCount: 0,
       ramenCount: 0,
@@ -42,9 +42,9 @@ export const PRESETS: { label: string; icon: any; desc: string; weights: MetricW
     },
   },
   {
-    label: 'ライフバランス',
+    label: '理想のライフバランス',
     icon: Heart,
-    desc: '基礎都市力をベースにしつつ、カルチャー・気候などの個性も均等に配分したランキング',
+    desc: '住居費・利便性・仕事などの都市スペックを抑えつつ、食・レジャーも均等に楽しむ欲張り移住プラン',
     weights: {
       starbucksCount: 25,
       ramenCount: 25,
@@ -84,10 +84,10 @@ export const WeightConfigPanel: React.FC<WeightConfigPanelProps> = ({
   };
 
   const sliders: { key: keyof MetricWeights; label: string; color: string }[] = [
-    { key: 'starbucksCount', label: 'スタバ店舗数', color: 'accent-green-600' },
-    { key: 'ramenCount', label: 'ラーメン店舗数', color: 'accent-orange-500' },
-    { key: 'attractiveness', label: '魅力度スコア', color: 'accent-rose-500' },
-    { key: 'sunshineHours', label: '年間日照時間', color: 'accent-yellow-500' },
+    { key: 'starbucksCount', label: 'カフェ充実度', color: 'accent-green-600' },
+    { key: 'ramenCount', label: 'グルメ充実度', color: 'accent-orange-500' },
+    { key: 'attractiveness', label: '観光・レジャー魅力度', color: 'accent-rose-500' },
+    { key: 'sunshineHours', label: '気候の快適さ', color: 'accent-yellow-500' },
   ];
 
   return (
@@ -138,8 +138,8 @@ export const WeightConfigPanel: React.FC<WeightConfigPanelProps> = ({
         {/* 固定基礎都市力のインフォカード */}
         <div className="p-3 bg-slate-50 dark:bg-slate-800/40 border border-slate-200/50 dark:border-slate-800/60 rounded-lg flex justify-between items-center text-xs">
           <div className="space-y-0.5">
-            <span className="font-bold text-slate-700 dark:text-slate-300 block">基礎都市力 (固定ベース)</span>
-            <span className="text-[10px] text-slate-400">平均地価・人口・上場企業数</span>
+            <span className="font-bold text-slate-700 dark:text-slate-300 block">基本生活スペック (固定ベース)</span>
+            <span className="text-[10px] text-slate-400">住居費安さ・利便性・求人</span>
           </div>
           <span className="font-bold text-slate-700 dark:text-slate-300 tabular-nums">
             30 <span className="text-[10px] text-slate-400 font-normal">({getSharePercent(30)}%)</span>

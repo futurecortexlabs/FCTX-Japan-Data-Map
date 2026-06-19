@@ -97,9 +97,15 @@ export function processPrefectureData(
 
     // 各都道府県に適用
     const withScores = yearData.map((pref, idx) => {
+      // 平均地価の偏差値は低い（安い）ほど「住居費の安さ」の魅力が高いため反転する（100 - score）
+      const rawLandPriceScore = landPriceScores[idx];
+      const invertedLandPriceScore = rawLandPriceScore !== undefined && !isNaN(rawLandPriceScore)
+        ? Math.round((100 - rawLandPriceScore) * 100) / 100
+        : undefined;
+
       let updatedPref: PrefectureData = {
         ...pref,
-        landPriceScore: landPriceScores[idx],
+        landPriceScore: invertedLandPriceScore,
         populationScore: populationScores[idx],
         listedCompanyScore: listedCompanyScores[idx],
         starbucksScore: starbucksScores[idx],

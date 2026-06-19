@@ -39,7 +39,7 @@ export const PrefectureDetailPanel: React.FC<PrefectureDetailPanelProps> = ({
   const basicMetrics = prefecture
     ? [
         {
-          label: '平均地価',
+          label: '住居費の安さ',
           value: formatValue(prefecture.landPrice, '円/㎡'),
           score: prefecture.landPriceScore,
           icon: Coins,
@@ -49,7 +49,7 @@ export const PrefectureDetailPanel: React.FC<PrefectureDetailPanelProps> = ({
           borderColor: 'border-amber-100 dark:border-amber-900/20',
         },
         {
-          label: '人口',
+          label: '生活利便性',
           value: formatValue(prefecture.population, '人', true),
           score: prefecture.populationScore,
           icon: Users,
@@ -59,7 +59,7 @@ export const PrefectureDetailPanel: React.FC<PrefectureDetailPanelProps> = ({
           borderColor: 'border-blue-100 dark:border-blue-900/20',
         },
         {
-          label: '上場企業数',
+          label: '雇用の豊富さ',
           value: formatValue(prefecture.listedCompanies, '社'),
           score: prefecture.listedCompanyScore,
           icon: Building2,
@@ -75,7 +75,7 @@ export const PrefectureDetailPanel: React.FC<PrefectureDetailPanelProps> = ({
   const lifestyleMetrics = prefecture
     ? [
         {
-          label: 'スタバ店舗数',
+          label: 'カフェ充実度',
           value: formatValue(prefecture.starbucksCount, '店舗'),
           score: prefecture.starbucksScore,
           icon: Coffee,
@@ -85,7 +85,7 @@ export const PrefectureDetailPanel: React.FC<PrefectureDetailPanelProps> = ({
           borderColor: 'border-green-100 dark:border-green-900/20',
         },
         {
-          label: 'ラーメン店舗数',
+          label: 'グルメ充実度',
           value: formatValue(prefecture.ramenCount, '店舗'),
           score: prefecture.ramenScore,
           icon: Soup,
@@ -95,7 +95,7 @@ export const PrefectureDetailPanel: React.FC<PrefectureDetailPanelProps> = ({
           borderColor: 'border-orange-100 dark:border-orange-900/20',
         },
         {
-          label: '魅力度スコア',
+          label: '観光・レジャー魅力度',
           value: formatValue(prefecture.attractiveness, '点'),
           score: prefecture.attractivenessScore,
           icon: Sparkles,
@@ -105,7 +105,7 @@ export const PrefectureDetailPanel: React.FC<PrefectureDetailPanelProps> = ({
           borderColor: 'border-rose-100 dark:border-rose-900/20',
         },
         {
-          label: '年間日照時間',
+          label: '気候の快適さ',
           value: formatValue(prefecture.sunshineHours, '時間'),
           score: prefecture.sunshineHoursScore,
           icon: Sun,
@@ -191,11 +191,11 @@ export const PrefectureDetailPanel: React.FC<PrefectureDetailPanelProps> = ({
                   <div className="flex justify-between items-center px-1">
                     <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1">
                       <Globe className="w-3 h-3 text-slate-400" />
-                      基礎スペック (固定割合ベース)
+                      基本生活スペック (固定割合ベース)
                     </span>
                     {prefecture.baseUrbanScore !== undefined && (
                       <span className="text-[10px] font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 dark:text-slate-400 px-1.5 py-0.5 rounded">
-                        基礎都市力: {prefecture.baseUrbanScore.toFixed(1)}
+                        基本生活力: {prefecture.baseUrbanScore.toFixed(1)}
                       </span>
                     )}
                   </div>
@@ -229,7 +229,7 @@ export const PrefectureDetailPanel: React.FC<PrefectureDetailPanelProps> = ({
                 {/* B. ライフスタイル・環境個性 */}
                 <div className="space-y-2">
                   <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider block px-1">
-                    ライフスタイル・環境個性 (ウェイト可変)
+                    食・レジャー・気候個性 (ウェイト可変)
                   </span>
                   
                   <div className="flex flex-col gap-2.5">

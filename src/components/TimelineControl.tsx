@@ -119,20 +119,29 @@ export const TimelineControl: React.FC<TimelineControlProps> = ({
             className="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-600 dark:accent-indigo-400"
           />
           {/* 目盛りラベル */}
-          <div className="flex justify-between text-[10px] font-bold text-slate-400 dark:text-slate-500 px-1 mt-0.5">
-            {years.map((y) => (
-              <span
-                key={y}
-                onClick={() => onYearChange(y)}
-                className={`cursor-pointer transition-colors ${
-                  y === selectedYear
-                    ? 'text-indigo-600 dark:text-indigo-400 font-extrabold scale-110'
-                    : 'hover:text-slate-600 dark:hover:text-slate-300'
-                }`}
-              >
-                {y}
-              </span>
-            ))}
+          <div className="flex justify-between text-[9px] sm:text-[10px] font-bold text-slate-400 dark:text-slate-500 px-1 mt-0.5 select-none">
+            {years.map((y) => {
+              const isMilestone = y === years[0] || y === years[years.length - 1] || y % 5 === 0;
+              const isSelected = y === selectedYear;
+              return (
+                <span
+                  key={y}
+                  onClick={() => onYearChange(y)}
+                  className={`cursor-pointer transition-all duration-200 flex flex-col items-center ${
+                    isSelected
+                      ? 'text-indigo-650 dark:text-indigo-450 font-black scale-110'
+                      : 'hover:text-slate-600 dark:hover:text-slate-300'
+                  }`}
+                  title={`${y}年`}
+                >
+                  {isMilestone ? (
+                    <span>{y}</span>
+                  ) : (
+                    <span className={`text-xs -mt-[1px] ${isSelected ? 'text-indigo-600 dark:text-indigo-400 font-extrabold scale-125' : 'text-slate-300 dark:text-slate-700'}`}>•</span>
+                  )}
+                </span>
+              );
+            })}
           </div>
         </div>
       </div>
