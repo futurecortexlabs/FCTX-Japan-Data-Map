@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { MapContainer, TileLayer, GeoJSON } from 'react-leaflet';
-import type { LeafletMouseEvent, PathOptions } from 'leaflet';
+import type { LeafletMouseEvent, PathOptions, GeoJSON as LGeoJSON } from 'leaflet';
 import type { PrefectureData, MetricType } from '../types/prefecture';
 import { METRIC_CONFIGS } from './MetricSelector';
 import { getColorForScore } from '../utils/colorScale';
@@ -9,7 +9,7 @@ import geoJsonData from '../data/prefectures.json';
 interface JapanMapProps {
   data: PrefectureData[];
   currentMetric: MetricType;
-  selectedPrefCode?: number;
+  selectedPrefCodes: number[];
   onSelectPrefecture: (prefCode: number) => void;
   selectedYear: number;
 }
@@ -17,11 +17,12 @@ interface JapanMapProps {
 export const JapanMap: React.FC<JapanMapProps> = ({
   data,
   currentMetric,
-  selectedPrefCode,
+  selectedPrefCodes,
   onSelectPrefecture,
   selectedYear,
 }) => {
   const config = METRIC_CONFIGS[currentMetric];
+  const geoJsonLayerRef = useRef<LGeoJSON>(null);
 
   // 日本の中心座標 (Leaflet初期位置)
   const position: [number, number] = [37.5, 137.5];
@@ -48,7 +49,7 @@ export const JapanMap: React.FC<JapanMapProps> = ({
     const score = prefData && scoreKey ? (prefData[scoreKey] as number) : undefined;
 
     const fillColor = getColorForScore(score);
-    const isSelected = selectedPrefCode === prefCode;
+    const isSelected = selectedPrefCodes.includes(prefCode);
 
     return {
       fillColor: fillColor,
@@ -59,19 +60,14 @@ export const JapanMap: React.FC<JapanMapProps> = ({
     };
   };
 
-  // 各都道府県ポリゴンのイベントとポップアップの設定
-  const onEachFeature = (feature: any, layer: any) => {
-    const prefCode = feature.properties.id;
-    const prefName = feature.properties.nam_ja || feature.properties.name || '不明';
+  // tooltipのコンテンツを生成
+  const generateTooltipContent = (prefCode: number, prefName: string) => {
     const prefData = data.find((d) => d.prefCode === prefCode);
     const val = prefData ? prefData[currentMetric] : undefined;
-
-    // 偏差値の取得
     const scoreKey = config.scoreKey;
     const scoreVal = prefData && scoreKey ? prefData[scoreKey] : undefined;
 
-    // ツールチップ（ホバー時に表示）
-    const tooltipContent = `
+    return `
       <div class="p-1 text-slate-800 dark:text-slate-800 font-sans">
         <strong class="text-sm font-bold block mb-1 border-b pb-0.5 border-slate-200">${prefName}</strong>
         <span class="text-xs text-slate-500 block">${config.label}</span>
@@ -83,6 +79,36 @@ export const JapanMap: React.FC<JapanMapProps> = ({
         }
       </div>
     `;
+  };
+
+  // 依存配列が変わったときにスタイルとツールチップを再計算して直接更新する
+  useEffect(() => {
+    if (geoJsonLayerRef.current) {
+      geoJsonLayerRef.current.eachLayer((layer: any) => {
+        const feature = layer.feature;
+        if (feature) {
+          // スタイルの更新
+          layer.setStyle(getFeatureStyle(feature));
+          
+          // ツールチップの更新
+          const prefCode = feature.properties.id;
+          const prefName = feature.properties.nam_ja || feature.properties.name || '不明';
+          const newTooltipContent = generateTooltipContent(prefCode, prefName);
+          
+          if (layer.getTooltip()) {
+            layer.setTooltipContent(newTooltipContent);
+          }
+        }
+      });
+    }
+  }, [data, currentMetric, selectedPrefCodes, selectedYear]);
+
+  // 各都道府県ポリゴンのイベントとポップアップの初期設定
+  const onEachFeature = (feature: any, layer: any) => {
+    const prefCode = feature.properties.id;
+    const prefName = feature.properties.nam_ja || feature.properties.name || '不明';
+
+    const tooltipContent = generateTooltipContent(prefCode, prefName);
 
     layer.bindTooltip(tooltipContent, {
       sticky: true,
@@ -95,10 +121,11 @@ export const JapanMap: React.FC<JapanMapProps> = ({
     layer.on({
       mouseover: (e: LeafletMouseEvent) => {
         const targetLayer = e.target;
+        const isSelected = selectedPrefCodes.includes(prefCode);
         targetLayer.setStyle({
           fillOpacity: 0.9,
-          weight: selectedPrefCode === prefCode ? 2.5 : 1.5,
-          color: selectedPrefCode === prefCode ? '#4f46e5' : '#64748b',
+          weight: isSelected ? 2.5 : 1.5,
+          color: isSelected ? '#4f46e5' : '#64748b',
         });
         targetLayer.bringToFront();
       },
@@ -123,18 +150,13 @@ export const JapanMap: React.FC<JapanMapProps> = ({
         scrollWheelZoom={true}
         className="w-full h-full"
       >
-        {/* スタイリッシュなライト系背景タイル (CartoDB Positron) */}
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
           url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
         />
 
-        {/* 
-          Vite/Reactでの再レンダリング時にスタイルが即座に反映されるよう、
-          keyプロパティに状態を埋め込んでコンポーネントを再作成させます。
-        */}
         <GeoJSON
-          key={`${currentMetric}-${selectedYear}-${data.map((d) => d.prefCode + '_' + (d[currentMetric] ?? 'none')).join('-')}-${selectedPrefCode}`}
+          ref={geoJsonLayerRef}
           data={geoJsonData as any}
           style={getFeatureStyle}
           onEachFeature={onEachFeature}
@@ -154,7 +176,6 @@ export const JapanMap: React.FC<JapanMapProps> = ({
           凡例: {config.label}
         </span>
         <div className="space-y-1.5">
-          {/* グラデーションバー */}
           <div className="h-2.5 w-full rounded-full bg-gradient-to-r from-blue-500 via-yellow-200 to-red-500" />
           <div className="flex justify-between text-[10px] font-bold text-slate-500 dark:text-slate-400">
             <span>低 (偏差値 35)</span>
@@ -169,3 +190,4 @@ export const JapanMap: React.FC<JapanMapProps> = ({
     </div>
   );
 };
+

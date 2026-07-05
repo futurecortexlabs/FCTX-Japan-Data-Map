@@ -6,14 +6,14 @@ import { METRIC_CONFIGS } from './MetricSelector';
 interface RankingTableProps {
   data: PrefectureData[];
   currentMetric: MetricType;
-  selectedPrefCode?: number;
+  selectedPrefCodes: number[];
   onSelectPrefecture: (prefCode: number) => void;
 }
 
 export const RankingTable: React.FC<RankingTableProps> = ({
   data,
   currentMetric,
-  selectedPrefCode,
+  selectedPrefCodes,
   onSelectPrefecture,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -117,7 +117,7 @@ export const RankingTable: React.FC<RankingTableProps> = ({
           <tbody>
             {filteredData.map((pref, index) => {
               const rank = index + 1;
-              const isSelected = selectedPrefCode === pref.prefCode;
+              const isSelected = selectedPrefCodes.includes(pref.prefCode);
               const value = pref[currentMetric];
               const scoreKey = config.scoreKey;
               const scoreVal = scoreKey ? pref[scoreKey] : undefined;
