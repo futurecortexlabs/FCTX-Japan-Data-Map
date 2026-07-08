@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { MapContainer, TileLayer, GeoJSON } from 'react-leaflet';
+import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet';
 import type { LeafletMouseEvent, PathOptions, GeoJSON as LGeoJSON } from 'leaflet';
 import type { PrefectureData, MetricType } from '../types/prefecture';
 import { METRIC_CONFIGS } from './MetricSelector';
@@ -12,7 +12,37 @@ interface JapanMapProps {
   selectedPrefCodes: number[];
   onSelectPrefecture: (prefCode: number) => void;
   selectedYear: number;
+  flashEffect?: string;
 }
+
+const MapController: React.FC = () => {
+  const map = useMap();
+  return (
+    <div className="absolute top-4 left-4 flex flex-col gap-1.5 z-[1000]">
+      <button
+        onClick={() => map.zoomIn()}
+        className="w-7 h-7 rounded-lg bg-white/95 dark:bg-slate-900/95 border border-slate-200/50 dark:border-slate-800/50 shadow flex items-center justify-center font-black text-xs text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+        title="拡大"
+      >
+        ＋
+      </button>
+      <button
+        onClick={() => map.zoomOut()}
+        className="w-7 h-7 rounded-lg bg-white/95 dark:bg-slate-900/95 border border-slate-200/50 dark:border-slate-800/50 shadow flex items-center justify-center font-black text-xs text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+        title="縮小"
+      >
+        －
+      </button>
+      <button
+        onClick={() => map.setView([37.5, 137.5], 5)}
+        className="w-7 h-7 rounded-lg bg-white/95 dark:bg-slate-900/95 border border-slate-200/50 dark:border-slate-800/50 shadow flex items-center justify-center text-[8px] font-black text-slate-750 dark:text-slate-300 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+        title="日本全図表示にリセット"
+      >
+        全図
+      </button>
+    </div>
+  );
+};
 
 export const JapanMap: React.FC<JapanMapProps> = ({
   data,
@@ -20,6 +50,7 @@ export const JapanMap: React.FC<JapanMapProps> = ({
   selectedPrefCodes,
   onSelectPrefecture,
   selectedYear,
+  flashEffect,
 }) => {
   const config = METRIC_CONFIGS[currentMetric];
   const geoJsonLayerRef = useRef<LGeoJSON>(null);
@@ -123,9 +154,9 @@ export const JapanMap: React.FC<JapanMapProps> = ({
         const targetLayer = e.target;
         const isSelected = selectedPrefCodes.includes(prefCode);
         targetLayer.setStyle({
-          fillOpacity: 0.9,
-          weight: isSelected ? 2.5 : 1.5,
-          color: isSelected ? '#4f46e5' : '#64748b',
+          fillOpacity: 0.95,
+          weight: isSelected ? 3.0 : 2.5,
+          color: isSelected ? '#a855f7' : '#38bdf8',
         });
         targetLayer.bringToFront();
       },
@@ -141,13 +172,30 @@ export const JapanMap: React.FC<JapanMapProps> = ({
   };
 
   return (
-    <div className="w-full h-full min-h-0 bg-slate-100 dark:bg-slate-950 rounded-xl overflow-hidden shadow-inner border border-slate-200/50 dark:border-slate-800/50 relative flex flex-col">
+    <div className={`w-full h-full min-h-0 glass-neon-border bg-slate-100/50 dark:bg-slate-900/40 rounded-xl overflow-hidden shadow-[0_8px_32px_0_rgba(31,38,135,0.15)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] border border-slate-200/50 dark:border-slate-800/50 relative flex flex-col transition-all duration-500 ${flashEffect || ''}`}>
+      <style>{`
+        @keyframes flashRed {
+          0%, 100% { border-color: rgba(226, 232, 240, 0.5); box-shadow: inset 0 2px 4px 0 rgba(0,0,0,0.06); }
+          50% { border-color: rgb(239, 68, 68); box-shadow: 0 0 25px 8px rgba(239, 68, 68, 0.45); }
+        }
+        @keyframes flashCyan {
+          0%, 100% { border-color: rgba(226, 232, 240, 0.5); box-shadow: inset 0 2px 4px 0 rgba(0,0,0,0.06); }
+          50% { border-color: rgb(6, 182, 212); box-shadow: 0 0 25px 8px rgba(6, 182, 212, 0.45); }
+        }
+        .flash-lehman {
+          animation: flashRed 1.5s ease-in-out;
+        }
+        .flash-covid {
+          animation: flashCyan 1.5s ease-in-out;
+        }
+      `}</style>
       <MapContainer
         center={position}
         zoom={zoomLevel}
         minZoom={4}
         maxZoom={8}
         scrollWheelZoom={true}
+        zoomControl={false}
         className="w-full h-full"
       >
         <TileLayer
@@ -161,6 +209,8 @@ export const JapanMap: React.FC<JapanMapProps> = ({
           style={getFeatureStyle}
           onEachFeature={onEachFeature}
         />
+        
+        <MapController />
       </MapContainer>
 
       {/* 右上 年次オーバーレイ表示 */}

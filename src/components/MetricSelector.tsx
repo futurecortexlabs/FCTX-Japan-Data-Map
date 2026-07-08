@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Coins, Users, Building2, Award, Coffee, Soup, Sparkles, Sun } from 'lucide-react';
+import { Coins, Users, Building2, Award, Coffee, Soup, Sparkles, Sun, Flame, Activity, Wind, Heart } from 'lucide-react';
 import { type MetricType, type MetricConfig } from '../types/prefecture';
 
 interface MetricSelectorProps {
@@ -36,6 +36,20 @@ export const METRIC_CONFIGS: Record<MetricType, MetricConfig> = {
     scoreKey: 'listedCompanyScore',
     category: 'basic',
   },
+  hospitalCount: {
+    key: 'hospitalCount',
+    label: '医療機関数 (総合病院数)',
+    unit: '施設',
+    scoreKey: 'hospitalScore',
+    category: 'basic',
+  },
+  childcareScore: {
+    key: 'childcareScore',
+    label: '子育てのしやすさ (環境指数)',
+    unit: '点',
+    scoreKey: 'childcareScoreScore',
+    category: 'basic',
+  },
   starbucksCount: {
     key: 'starbucksCount',
     label: 'カフェ充実度 (スタバ店舗数)',
@@ -48,6 +62,13 @@ export const METRIC_CONFIGS: Record<MetricType, MetricConfig> = {
     label: 'グルメ充実度 (ラーメン店舗数)',
     unit: '店舗',
     scoreKey: 'ramenScore',
+    category: 'lifestyle',
+  },
+  onsenCount: {
+    key: 'onsenCount',
+    label: '温泉の多さ (源泉地数)',
+    unit: '箇所',
+    scoreKey: 'onsenScore',
     category: 'lifestyle',
   },
   attractiveness: {
@@ -64,6 +85,13 @@ export const METRIC_CONFIGS: Record<MetricType, MetricConfig> = {
     scoreKey: 'sunshineHoursScore',
     category: 'environment',
   },
+  pollenLevel: {
+    key: 'pollenLevel',
+    label: '花粉の少なさ (快適レベル)',
+    unit: 'クラス',
+    scoreKey: 'pollenScore',
+    category: 'environment',
+  },
 };
 
 export const MetricSelector: React.FC<MetricSelectorProps> = ({
@@ -75,9 +103,9 @@ export const MetricSelector: React.FC<MetricSelectorProps> = ({
 
 
   const categories = [
-    { key: 'basic' as const, label: '都市利便・雇用' },
-    { key: 'lifestyle' as const, label: '食・カルチャー' },
-    { key: 'environment' as const, label: 'レジャー・気候' },
+    { key: 'basic' as const, label: '都市利便・雇用・生活' },
+    { key: 'lifestyle' as const, label: '食・温泉・カルチャー' },
+    { key: 'environment' as const, label: 'レジャー・気候・環境' },
   ];
 
   const items = [
@@ -85,14 +113,18 @@ export const MetricSelector: React.FC<MetricSelectorProps> = ({
     { key: 'landPrice' as MetricType, icon: Coins, color: 'text-amber-600 dark:text-amber-400', activeBg: 'bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800' },
     { key: 'population' as MetricType, icon: Users, color: 'text-blue-600 dark:text-blue-400', activeBg: 'bg-blue-50 border-blue-200 dark:bg-blue-950/20 dark:border-blue-800' },
     { key: 'listedCompanies' as MetricType, icon: Building2, color: 'text-emerald-600 dark:text-emerald-400', activeBg: 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800' },
+    { key: 'hospitalCount' as MetricType, icon: Activity, color: 'text-cyan-600 dark:text-cyan-400', activeBg: 'bg-cyan-50 border-cyan-200 dark:bg-cyan-950/20 dark:border-cyan-800' },
+    { key: 'childcareScore' as MetricType, icon: Heart, color: 'text-pink-600 dark:text-pink-400', activeBg: 'bg-pink-50 border-pink-200 dark:bg-pink-950/20 dark:border-pink-800' },
     { key: 'starbucksCount' as MetricType, icon: Coffee, color: 'text-green-600 dark:text-green-400', activeBg: 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800' },
     { key: 'ramenCount' as MetricType, icon: Soup, color: 'text-orange-600 dark:text-orange-400', activeBg: 'bg-orange-50 border-orange-200 dark:bg-orange-950/20 dark:border-orange-800' },
+    { key: 'onsenCount' as MetricType, icon: Flame, color: 'text-red-500 dark:text-red-400', activeBg: 'bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-800' },
     { key: 'attractiveness' as MetricType, icon: Sparkles, color: 'text-rose-600 dark:text-rose-400', activeBg: 'bg-rose-50 border-rose-200 dark:bg-rose-950/20 dark:border-rose-800' },
     { key: 'sunshineHours' as MetricType, icon: Sun, color: 'text-yellow-600 dark:text-yellow-400', activeBg: 'bg-yellow-50 border-yellow-200 dark:bg-yellow-950/20 dark:border-yellow-800' },
+    { key: 'pollenLevel' as MetricType, icon: Wind, color: 'text-teal-600 dark:text-teal-400', activeBg: 'bg-teal-50 border-teal-200 dark:bg-teal-950/20 dark:border-teal-800' },
   ];
 
   return (
-    <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md p-4 rounded-xl shadow-lg border border-slate-200/50 dark:border-slate-800/50 flex flex-col gap-3.5">
+    <div className="glass-neon-border p-4 rounded-xl shadow-[0_8px_32px_0_rgba(31,38,135,0.15)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] flex flex-col gap-3.5 transition-all duration-300">
       <div>
         <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">
           可視化指標の選択

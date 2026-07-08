@@ -32,6 +32,10 @@ self.onmessage = (e: MessageEvent<WorkerMessage>) => {
             ramenCount: row.ramenCount !== undefined && row.ramenCount !== '' ? Number(row.ramenCount) : undefined,
             attractiveness: row.attractiveness !== undefined && row.attractiveness !== '' ? Number(row.attractiveness) : undefined,
             sunshineHours: row.sunshineHours !== undefined && row.sunshineHours !== '' ? Number(row.sunshineHours) : undefined,
+            onsenCount: row.onsenCount !== undefined && row.onsenCount !== '' ? Number(row.onsenCount) : undefined,
+            hospitalCount: row.hospitalCount !== undefined && row.hospitalCount !== '' ? Number(row.hospitalCount) : undefined,
+            pollenLevel: row.pollenLevel !== undefined && row.pollenLevel !== '' ? Number(row.pollenLevel) : undefined,
+            childcareScore: row.childcareScore !== undefined && row.childcareScore !== '' ? Number(row.childcareScore) : undefined,
           }));
 
           self.postMessage({ type: 'PARSE_SUCCESS', payload: parsedData });

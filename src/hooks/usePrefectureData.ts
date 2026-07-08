@@ -12,6 +12,7 @@ export function usePrefectureData(sampleCsvUrl: string, initialWeights: MetricWe
   const [error, setError] = useState<string | null>(null);
 
   const workerRef = useRef<Worker | null>(null);
+  const cacheRef = useRef<Map<string, PrefectureData[]>>(new Map());
 
   // Workerの初期化とリスナー設定
   useEffect(() => {
@@ -31,6 +32,10 @@ export function usePrefectureData(sampleCsvUrl: string, initialWeights: MetricWe
         setError(`CSV解析エラー: ${payload}`);
         setLoading(false);
       } else if (type === 'PROCESS_SUCCESS') {
+        // キャッシュへ保存
+        const key = JSON.stringify(weights);
+        cacheRef.current.set(key, payload);
+        
         setAllPrefectures(payload);
         setLoading(false);
       } else if (type === 'PROCESS_ERROR') {
@@ -42,15 +47,22 @@ export function usePrefectureData(sampleCsvUrl: string, initialWeights: MetricWe
     return () => {
       workerRef.current?.terminate();
     };
-  }, []);
+  }, [weights]); // weightsを依存配列に追加して最新のweightsを参照できるようにする
 
-  // weightsが変わったら再計算
+  // weightsが変わったら再計算（キャッシュチェック）
   useEffect(() => {
-    if (rawPrefectures.length > 0 && workerRef.current) {
-      workerRef.current.postMessage({
-        type: 'PROCESS_DATA',
-        payload: { rawData: rawPrefectures, weights }
-      });
+    if (rawPrefectures.length > 0) {
+      const key = JSON.stringify(weights);
+      if (cacheRef.current.has(key)) {
+        setAllPrefectures(cacheRef.current.get(key)!);
+        setLoading(false);
+      } else if (workerRef.current) {
+        setLoading(true);
+        workerRef.current.postMessage({
+          type: 'PROCESS_DATA',
+          payload: { rawData: rawPrefectures, weights }
+        });
+      }
     }
   }, [weights, rawPrefectures]);
 

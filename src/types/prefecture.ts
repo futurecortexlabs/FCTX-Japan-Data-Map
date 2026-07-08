@@ -9,6 +9,10 @@ export interface PrefectureData {
   ramenCount?: number;
   attractiveness?: number;
   sunshineHours?: number;
+  onsenCount?: number;
+  hospitalCount?: number;
+  pollenLevel?: number;
+  childcareScore?: number;
   
   // 偏差値スコア
   landPriceScore?: number;
@@ -18,6 +22,10 @@ export interface PrefectureData {
   ramenScore?: number;
   attractivenessScore?: number;
   sunshineHoursScore?: number;
+  onsenScore?: number;
+  hospitalScore?: number;
+  pollenScore?: number;
+  childcareScoreScore?: number;
   
   // 基礎都市力（地価・人口・企業数の偏差値平均）
   baseUrbanScore?: number;
@@ -36,6 +44,10 @@ export interface RawPrefectureData {
   ramenCount?: string | number;
   attractiveness?: string | number;
   sunshineHours?: string | number;
+  onsenCount?: string | number;
+  hospitalCount?: string | number;
+  pollenLevel?: string | number;
+  childcareScore?: string | number;
 }
 
 export type MetricType =
@@ -46,7 +58,11 @@ export type MetricType =
   | 'starbucksCount'
   | 'ramenCount'
   | 'attractiveness'
-  | 'sunshineHours';
+  | 'sunshineHours'
+  | 'onsenCount'
+  | 'hospitalCount'
+  | 'pollenLevel'
+  | 'childcareScore';
 
 export interface MetricConfig {
   key: MetricType;
@@ -56,10 +72,14 @@ export interface MetricConfig {
   category: 'basic' | 'lifestyle' | 'environment';
 }
 
-// ユーザーがカスタマイズ可能なライフスタイル・環境指標の重み (合計100)
+// ユーザーがカスタマイズ可能なライフスタイル・環境指標の重み
 export interface MetricWeights {
   starbucksCount: number;
   ramenCount: number;
   attractiveness: number;
   sunshineHours: number;
+  onsenCount: number;
+  hospitalCount: number;
+  pollenLevel: number;
+  childcareScore: number;
 }

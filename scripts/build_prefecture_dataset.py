@@ -77,6 +77,10 @@ def main():
     ramen_file = "scripts/temp/ramen.json"
     attractiveness_file = "scripts/temp/attractiveness.json"
     sunshine_file = "scripts/temp/sunshine.json"
+    onsen_file = "scripts/temp/onsen.json"
+    hospital_file = "scripts/temp/hospital.json"
+    pollen_file = "scripts/temp/pollen.json"
+    childcare_file = "scripts/temp/childcare.json"
     
     # 欠落データスクリプトの自動実行
     run_script_if_missing(pop_file, "fetch_population.py")
@@ -86,6 +90,10 @@ def main():
     run_script_if_missing(ramen_file, "fetch_ramen.py")
     run_script_if_missing(attractiveness_file, "fetch_attractiveness.py")
     run_script_if_missing(sunshine_file, "fetch_sunshine.py")
+    run_script_if_missing(onsen_file, "fetch_onsen.py")
+    run_script_if_missing(hospital_file, "fetch_hospital.py")
+    run_script_if_missing(pollen_file, "fetch_pollen.py")
+    run_script_if_missing(childcare_file, "fetch_childcare.py")
     
     # データのロード
     pop_base = load_json_data(pop_file)
@@ -96,6 +104,10 @@ def main():
     ramen_timeline = load_json_timeline_data(ramen_file)
     attractiveness_timeline = load_json_timeline_data(attractiveness_file)
     sunshine_timeline = load_json_timeline_data(sunshine_file)
+    onsen_timeline = load_json_timeline_data(onsen_file)
+    hospital_timeline = load_json_timeline_data(hospital_file)
+    pollen_timeline = load_json_timeline_data(pollen_file)
+    childcare_timeline = load_json_timeline_data(childcare_file)
     
     # 保存先
     dest_dir = os.path.join("src", "data")
@@ -113,7 +125,8 @@ def main():
             writer.writerow([
                 "year", "prefCode", "prefName", 
                 "landPrice", "population", "listedCompanies",
-                "starbucksCount", "ramenCount", "attractiveness", "sunshineHours"
+                "starbucksCount", "ramenCount", "attractiveness", "sunshineHours",
+                "onsenCount", "hospitalCount", "pollenLevel", "childcareScore"
             ])
             
             # 各年ごとに全都道府県のデータを結合
@@ -149,11 +162,16 @@ def main():
                     ramen = ramen_timeline.get(year, {}).get(code)
                     attr = attractiveness_timeline.get(year, {}).get(code)
                     sunshine = sunshine_timeline.get(year, {}).get(code)
+                    onsen = onsen_timeline.get(year, {}).get(code)
+                    hospital = hospital_timeline.get(year, {}).get(code)
+                    pollen = pollen_timeline.get(year, {}).get(code)
+                    childcare = childcare_timeline.get(year, {}).get(code)
                     
                     writer.writerow([
                         year, code, name,
                         price, pop, comp,
-                        starbucks, ramen, attr, sunshine
+                        starbucks, ramen, attr, sunshine,
+                        onsen, hospital, pollen, childcare
                     ])
                     
         print("25-year timeline dataset successfully built!")

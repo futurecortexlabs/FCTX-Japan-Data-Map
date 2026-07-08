@@ -11,45 +11,61 @@ export const PRESETS: { label: string; icon: any; desc: string; weights: MetricW
   {
     label: '都会利便性＆仕事重視',
     icon: Building,
-    desc: '生活利便性や求人の多さを最優先し、カルチャー・レジャー指標のウェイトを0にした都市型移住プラン',
+    desc: '生活利便性や医療環境の多さを最優先し、カルチャー・レジャー指標のウェイトを0にした都市型移住プラン',
     weights: {
       starbucksCount: 0,
       ramenCount: 0,
       attractiveness: 0,
       sunshineHours: 0,
+      onsenCount: 0,
+      hospitalCount: 50,
+      pollenLevel: 0,
+      childcareScore: 50,
     },
   },
   {
     label: 'カルチャー＆グルメ移住',
     icon: Zap,
-    desc: 'カフェ文化や美味しいラーメン店など、ローカルでの豊かな暮らしと食を最優先するライフスタイルプラン',
+    desc: 'カフェやラーメン、名物温泉など、ローカルでの豊かな暮らしと食文化を最優先するライフスタイルプラン',
     weights: {
-      starbucksCount: 50,
-      ramenCount: 50,
+      starbucksCount: 40,
+      ramenCount: 40,
       attractiveness: 0,
       sunshineHours: 0,
+      onsenCount: 20,
+      hospitalCount: 0,
+      pollenLevel: 0,
+      childcareScore: 0,
     },
   },
   {
     label: 'リゾート＆スローライフ',
     icon: Sun,
-    desc: '年間を通した晴天率（日照時間）と、観光地としての楽しさを重視した快適なスローライフプラン',
+    desc: '年間を通した晴天率（日照時間）や花粉の少なさ、観光地としての楽しさを重視した快適なスローライフプラン',
     weights: {
       starbucksCount: 0,
       ramenCount: 0,
-      attractiveness: 60,
-      sunshineHours: 40,
+      attractiveness: 30,
+      sunshineHours: 35,
+      onsenCount: 0,
+      hospitalCount: 0,
+      pollenLevel: 35,
+      childcareScore: 0,
     },
   },
   {
     label: '理想のライフバランス',
     icon: Heart,
-    desc: '住居費・利便性・仕事などの都市スペックを抑えつつ、食・レジャーも均等に楽しむ欲張り移住プラン',
+    desc: '都市スペック（仕事・医療・子育て）を確保しつつ、食・レジャー・環境も均等に楽しむ欲張りプラン',
     weights: {
-      starbucksCount: 25,
-      ramenCount: 25,
-      attractiveness: 25,
-      sunshineHours: 25,
+      starbucksCount: 15,
+      ramenCount: 15,
+      attractiveness: 15,
+      sunshineHours: 15,
+      onsenCount: 10,
+      hospitalCount: 10,
+      pollenLevel: 10,
+      childcareScore: 10,
     },
   },
 ];
@@ -74,6 +90,10 @@ export const WeightConfigPanel: React.FC<WeightConfigPanelProps> = ({
       ramenCount: 0,
       attractiveness: 0,
       sunshineHours: 0,
+      onsenCount: 0,
+      hospitalCount: 0,
+      pollenLevel: 0,
+      childcareScore: 0,
     });
   };
 
@@ -86,8 +106,12 @@ export const WeightConfigPanel: React.FC<WeightConfigPanelProps> = ({
   const sliders: { key: keyof MetricWeights; label: string; color: string }[] = [
     { key: 'starbucksCount', label: 'カフェ充実度', color: 'accent-green-600' },
     { key: 'ramenCount', label: 'グルメ充実度', color: 'accent-orange-500' },
+    { key: 'onsenCount', label: '温泉の多さ', color: 'accent-red-500' },
     { key: 'attractiveness', label: '観光・レジャー魅力度', color: 'accent-rose-500' },
     { key: 'sunshineHours', label: '気候の快適さ', color: 'accent-yellow-500' },
+    { key: 'pollenLevel', label: '花粉の少なさ', color: 'accent-teal-600' },
+    { key: 'hospitalCount', label: '医療機関数', color: 'accent-cyan-600' },
+    { key: 'childcareScore', label: '子育てしやすさ', color: 'accent-pink-600' },
   ];
 
   return (

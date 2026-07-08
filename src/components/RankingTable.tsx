@@ -79,7 +79,7 @@ export const RankingTable: React.FC<RankingTableProps> = ({
   };
 
   return (
-    <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md p-4 rounded-xl shadow-lg border border-slate-200/50 dark:border-slate-800/50 flex flex-col h-full overflow-hidden">
+    <div className="glass-neon-border p-4 rounded-xl shadow-[0_8px_32px_0_rgba(31,38,135,0.15)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] flex flex-col h-full overflow-hidden transition-all duration-300">
       <div className="mb-3.5">
         <div className="flex justify-between items-baseline mb-2">
           <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">

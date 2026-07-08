@@ -41,6 +41,10 @@ export function calculateCustomTotalScore(
     { score: pref.ramenScore, weight: weights.ramenCount },
     { score: pref.attractivenessScore, weight: weights.attractiveness },
     { score: pref.sunshineHoursScore, weight: weights.sunshineHours },
+    { score: pref.onsenScore, weight: weights.onsenCount },
+    { score: pref.hospitalScore, weight: weights.hospitalCount },
+    { score: pref.pollenScore, weight: weights.pollenLevel },
+    { score: pref.childcareScoreScore, weight: weights.childcareScore },
   ];
 
   for (const item of scoreMappings) {
@@ -68,6 +72,10 @@ export function processPrefectureData(
     ramenCount: 0,
     attractiveness: 0,
     sunshineHours: 0,
+    onsenCount: 0,
+    hospitalCount: 0,
+    pollenLevel: 0,
+    childcareScore: 0,
   }
 ): PrefectureData[] {
   // 年（year）ごとにグループ化
@@ -85,6 +93,10 @@ export function processPrefectureData(
     const ramenCounts = yearData.map((d) => d.ramenCount);
     const attractivenessScores = yearData.map((d) => d.attractiveness);
     const sunshineHours = yearData.map((d) => d.sunshineHours);
+    const onsenCounts = yearData.map((d) => d.onsenCount);
+    const hospitalCounts = yearData.map((d) => d.hospitalCount);
+    const pollenLevels = yearData.map((d) => d.pollenLevel);
+    const childcareScores = yearData.map((d) => d.childcareScore);
 
     // 偏差値の計算
     const landPriceScores = calculateZScores(landPrices);
@@ -94,6 +106,10 @@ export function processPrefectureData(
     const ramenScores = calculateZScores(ramenCounts);
     const attractivenessZScores = calculateZScores(attractivenessScores);
     const sunshineHoursScores = calculateZScores(sunshineHours);
+    const onsenScores = calculateZScores(onsenCounts);
+    const hospitalScores = calculateZScores(hospitalCounts);
+    const pollenZScores = calculateZScores(pollenLevels);
+    const childcareZScores = calculateZScores(childcareScores);
 
     // 各都道府県に適用
     const withScores = yearData.map((pref, idx) => {
@@ -101,6 +117,12 @@ export function processPrefectureData(
       const rawLandPriceScore = landPriceScores[idx];
       const invertedLandPriceScore = rawLandPriceScore !== undefined && !isNaN(rawLandPriceScore)
         ? Math.round((100 - rawLandPriceScore) * 100) / 100
+        : undefined;
+
+      // 花粉の多さは低いほど「花粉の少なさ」の魅力が高いため反転する（100 - score）
+      const rawPollenScore = pollenZScores[idx];
+      const invertedPollenScore = rawPollenScore !== undefined && !isNaN(rawPollenScore)
+        ? Math.round((100 - rawPollenScore) * 100) / 100
         : undefined;
 
       let updatedPref: PrefectureData = {
@@ -112,6 +134,10 @@ export function processPrefectureData(
         ramenScore: ramenScores[idx],
         attractivenessScore: attractivenessZScores[idx],
         sunshineHoursScore: sunshineHoursScores[idx],
+        onsenScore: onsenScores[idx],
+        hospitalScore: hospitalScores[idx],
+        pollenScore: invertedPollenScore,
+        childcareScoreScore: childcareZScores[idx],
       };
 
       // 基礎都市力を計算

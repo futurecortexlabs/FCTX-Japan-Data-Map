@@ -5,12 +5,10 @@ import type { PrefectureData } from '../types/prefecture';
 
 interface CsvUploaderProps {
   onDataLoaded: (data: PrefectureData[]) => void;
-  sampleCsvUrl: string;
 }
 
 export const CsvUploader: React.FC<CsvUploaderProps> = ({
   onDataLoaded,
-  sampleCsvUrl,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
@@ -29,7 +27,30 @@ export const CsvUploader: React.FC<CsvUploaderProps> = ({
     if (['ramen', 'ramencount', 'ramen_count', 'ラーメン', 'ラーメン店舗数', 'らーめん'].includes(cleaned)) return 'ramenCount';
     if (['attractiveness', 'attractivenessscore', 'charm', '魅力度', '魅力度スコア', '魅力'].includes(cleaned)) return 'attractiveness';
     if (['sunshinehours', 'sunshine', 'sunshine_hours', '日照時間', '年間日照時間', '日照'].includes(cleaned)) return 'sunshineHours';
+    if (['onsen', 'onsencount', 'onsen_count', '温泉', '温泉数', '温泉の数', '温泉箇所数'].includes(cleaned)) return 'onsenCount';
+    if (['hospital', 'hospitalcount', 'hospital_count', 'hospitals', '医療機関数', '病院数', '病院'].includes(cleaned)) return 'hospitalCount';
+    if (['pollen', 'pollenlevel', 'pollen_level', '花粉', '花粉量', '花粉の少なさ'].includes(cleaned)) return 'pollenLevel';
+    if (['childcare', 'childcarescore', 'childcare_score', '子育て', '子育てしやすさ', '育児'].includes(cleaned)) return 'childcareScore';
     return key;
+  };
+
+  const handleDownloadTemplate = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const csvHeaders = "prefCode,prefName,year,landPrice,population,listedCompanies,starbucksCount,ramenCount,onsenCount,attractiveness,sunshineHours,pollenLevel,hospitalCount,childcareScore\n";
+    const dummyRows = [
+      "13,東京都,2024,350000,14000000,1800,420,3200,30,85,1900,3,650,75",
+      "1,北海道,2024,65000,5100000,320,150,1100,240,78,1650,1,340,82",
+      "47,沖縄県,2024,80000,1460000,85,32,150,10,80,2100,1,92,88"
+    ].join("\n");
+    
+    const blob = new Blob([csvHeaders + dummyRows], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "fctx_utopia_template.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -63,7 +84,7 @@ export const CsvUploader: React.FC<CsvUploaderProps> = ({
             const prefName = String(normalizedRow.prefName || '').trim();
 
             if (isNaN(prefCode) || !prefCode) {
-              throw new Error(`行 ${index + 2}: 都道府県コードが正しくありません。`);
+               throw new Error(`行 ${index + 2}: 都道府県コードが正しくありません。`);
             }
             if (!prefName) {
               throw new Error(`行 ${index + 2}: 都道府県名がありません。`);
@@ -80,6 +101,10 @@ export const CsvUploader: React.FC<CsvUploaderProps> = ({
               ramenCount: normalizedRow.ramenCount !== undefined && normalizedRow.ramenCount !== '' && normalizedRow.ramenCount !== null ? Number(normalizedRow.ramenCount) : undefined,
               attractiveness: normalizedRow.attractiveness !== undefined && normalizedRow.attractiveness !== '' && normalizedRow.attractiveness !== null ? Number(normalizedRow.attractiveness) : undefined,
               sunshineHours: normalizedRow.sunshineHours !== undefined && normalizedRow.sunshineHours !== '' && normalizedRow.sunshineHours !== null ? Number(normalizedRow.sunshineHours) : undefined,
+              onsenCount: normalizedRow.onsenCount !== undefined && normalizedRow.onsenCount !== '' && normalizedRow.onsenCount !== null ? Number(normalizedRow.onsenCount) : undefined,
+              hospitalCount: normalizedRow.hospitalCount !== undefined && normalizedRow.hospitalCount !== '' && normalizedRow.hospitalCount !== null ? Number(normalizedRow.hospitalCount) : undefined,
+              pollenLevel: normalizedRow.pollenLevel !== undefined && normalizedRow.pollenLevel !== '' && normalizedRow.pollenLevel !== null ? Number(normalizedRow.pollenLevel) : undefined,
+              childcareScore: normalizedRow.childcareScore !== undefined && normalizedRow.childcareScore !== '' && normalizedRow.childcareScore !== null ? Number(normalizedRow.childcareScore) : undefined,
             };
           });
 
@@ -117,14 +142,13 @@ export const CsvUploader: React.FC<CsvUploaderProps> = ({
         <p className="text-xs font-bold text-slate-500 dark:text-slate-400">
           CSVデータインポート
         </p>
-        <a
-          href={sampleCsvUrl}
-          download="sample_prefecture_data.csv"
-          className="flex items-center gap-1 text-[10px] text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-bold cursor-pointer"
+        <button
+          onClick={handleDownloadTemplate}
+          className="flex items-center gap-1 text-[10px] text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-bold cursor-pointer border-none bg-transparent"
         >
           <Download className="w-3 h-3" />
           テンプレートCSVをダウンロード
-        </a>
+        </button>
       </div>
 
       <div
