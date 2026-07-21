@@ -12,6 +12,8 @@ import { CsvUploader } from './components/CsvUploader';
 import { TimelineControl } from './components/TimelineControl';
 import sampleCsvUrl from './data/sample_prefecture_data.csv?url';
 import { checkNewAchievements, type UserStats, type Achievement } from './utils/achievements';
+import { motion, AnimatePresence } from 'framer-motion';
+import confetti from 'canvas-confetti';
 
 import { useDarkMode } from './hooks/useDarkMode';
 import { useUrlState } from './hooks/useUrlState';
@@ -95,6 +97,15 @@ function App() {
       const newIds = newlyUnlocked.map(a => a.id);
       setUnlockedAchievements(curr => [...curr, ...newIds]);
       setAchievementToast(newlyUnlocked[0]);
+      
+      // 実績解除コンフェッティ！
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#4f46e5', '#10b981', '#f59e0b']
+      });
+
       const timer = setTimeout(() => setAchievementToast(null), 4000);
       return () => clearTimeout(timer);
     }
@@ -175,6 +186,17 @@ function App() {
     .filter((p): p is PrefectureData => p !== undefined);
 
   const [mapFlash, setMapFlash] = useState<string>('');
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      const x = (e.clientX / window.innerWidth - 0.5) * 40;
+      const y = (e.clientY / window.innerHeight - 0.5) * 40;
+      setMousePosition({ x, y });
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
 
   useEffect(() => {
     if (selectedYear === 2008) {
@@ -267,6 +289,32 @@ function App() {
           catchphrase: catchphrase
         });
         setGachaRunning(false);
+
+        // レア度に応じて紙吹雪を飛ばす
+        if (catchphrase.rarity === 'SSR' || catchphrase.rarity === 'SR') {
+          const duration = 2000;
+          const end = Date.now() + duration;
+          const frame = () => {
+            confetti({
+              particleCount: 5,
+              angle: 60,
+              spread: 55,
+              origin: { x: 0 },
+              colors: catchphrase.rarity === 'SSR' ? ['#f59e0b', '#fbbf24'] : ['#818cf8', '#c7d2fe']
+            });
+            confetti({
+              particleCount: 5,
+              angle: 120,
+              spread: 55,
+              origin: { x: 1 },
+              colors: catchphrase.rarity === 'SSR' ? ['#f59e0b', '#fbbf24'] : ['#818cf8', '#c7d2fe']
+            });
+            if (Date.now() < end) {
+              requestAnimationFrame(frame);
+            }
+          };
+          frame();
+        }
       }
     }, 70);
   };
@@ -381,11 +429,23 @@ function App() {
         className="absolute inset-0 pointer-events-none transition-all duration-1000 ease-in-out z-0 opacity-100 mix-blend-multiply dark:mix-blend-screen"
         style={getAmbientStyle()}
       />
-      {/* 動的フローティング・オーブ */}
+      {/* 動的フローティング・オーブ (パララックス対応) */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute -top-20 -left-20 w-64 h-64 bg-indigo-500/30 dark:bg-indigo-600/20 rounded-full blur-[80px] animate-blob"></div>
-        <div className="absolute top-1/4 -right-20 w-80 h-80 bg-rose-500/20 dark:bg-rose-600/15 rounded-full blur-[100px] animate-blob-reverse animation-delay-2000"></div>
-        <div className="absolute -bottom-32 left-1/3 w-96 h-96 bg-emerald-500/20 dark:bg-emerald-500/15 rounded-full blur-[120px] animate-blob-slow animation-delay-4000"></div>
+        <motion.div 
+          animate={{ x: mousePosition.x * -1, y: mousePosition.y * -1 }}
+          transition={{ type: "spring", damping: 15, stiffness: 100 }}
+          className="absolute -top-20 -left-20 w-64 h-64 bg-indigo-500/30 dark:bg-indigo-600/20 rounded-full blur-[80px] animate-blob" 
+        />
+        <motion.div 
+          animate={{ x: mousePosition.x * 1.5, y: mousePosition.y * 1.5 }}
+          transition={{ type: "spring", damping: 15, stiffness: 80 }}
+          className="absolute top-1/4 -right-20 w-80 h-80 bg-rose-500/20 dark:bg-rose-600/15 rounded-full blur-[100px] animate-blob-reverse animation-delay-2000" 
+        />
+        <motion.div 
+          animate={{ x: mousePosition.x * -2, y: mousePosition.y * 2 }}
+          transition={{ type: "spring", damping: 10, stiffness: 50 }}
+          className="absolute -bottom-32 left-1/3 w-96 h-96 bg-emerald-500/20 dark:bg-emerald-500/15 rounded-full blur-[120px] animate-blob-slow animation-delay-4000" 
+        />
       </div>
 
       {/* ナビゲーションバー (Glassmorphism) */}
@@ -405,34 +465,40 @@ function App() {
         </div>
 
         <div className="flex items-center gap-3">
-          <button
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             onClick={() => {
               setShowGacha(true);
               setTimeout(() => {
                 handleRollGacha();
               }, 100);
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 dark:hover:bg-amber-500/30 rounded-lg border border-amber-200 dark:border-amber-500/50 cursor-pointer transition-all shadow-sm cyber-glow hover:scale-105"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 dark:hover:bg-amber-500/30 rounded-lg border border-amber-200 dark:border-amber-500/50 cursor-pointer transition-all shadow-sm cyber-glow"
           >
             <span className="animate-bounce">🎰</span>
             <span>理想郷ガチャ</span>
-          </button>
+          </motion.button>
 
-          <button
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             onClick={() => setShowUploader(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/20 dark:hover:bg-indigo-500/30 rounded-lg border border-indigo-200 dark:border-indigo-500/50 cursor-pointer transition-all cyber-glow hover:scale-105"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/20 dark:hover:bg-indigo-500/30 rounded-lg border border-indigo-200 dark:border-indigo-500/50 cursor-pointer transition-all cyber-glow"
           >
             <Upload className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">インポート</span>
-          </button>
+          </motion.button>
 
-          <button
+          <motion.button
+            whileHover={{ scale: 1.1, rotate: 15 }}
+            whileTap={{ scale: 0.9 }}
             onClick={() => setIsDarkMode(!isDarkMode)}
             className="p-2.5 rounded-lg border border-slate-200/50 dark:border-slate-800/50 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors"
             aria-label="Toggle Dark Mode"
           >
             {isDarkMode ? <Sun className="w-4 h-4 text-amber-500" /> : <Moon className="w-4 h-4 text-indigo-600" />}
-          </button>
+          </motion.button>
         </div>
       </header>
 
@@ -534,13 +600,25 @@ function App() {
       </main>
 
       {/* モーダル CSVアップローダー */}
+      <AnimatePresence>
       {showUploader && (
-        <div className="fixed inset-0 z-[5000] flex items-center justify-center p-4">
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[5000] flex items-center justify-center p-4"
+        >
           <div 
             className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm transition-opacity"
             onClick={() => setShowUploader(false)}
           />
-          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-lg w-full relative z-[5001] overflow-hidden transition-all transform flex flex-col max-h-[90vh]">
+          <motion.div 
+            initial={{ scale: 0.9, y: 20 }}
+            animate={{ scale: 1, y: 0 }}
+            exit={{ scale: 0.9, y: 20 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-xl border border-white/20 dark:border-slate-700/50 shadow-2xl max-w-lg w-full relative z-[5001] overflow-hidden flex flex-col max-h-[90vh]"
+          >
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-850/60">
               <div className="flex items-center gap-2">
                 <Upload className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
@@ -565,19 +643,32 @@ function App() {
                 }}
               />
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       )}
+      </AnimatePresence>
 
       {/* 理想郷ガチャモーダル */}
+      <AnimatePresence>
       {showGacha && (
-        <div className="fixed inset-0 z-[5000] flex items-center justify-center p-4">
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[5000] flex items-center justify-center p-4"
+        >
           <div 
             className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm transition-opacity"
             onClick={() => !gachaRunning && setShowGacha(false)}
           />
           
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-sm w-full relative z-[5001] overflow-hidden transition-all transform flex flex-col p-6 items-center text-center gap-4">
+          <motion.div 
+            initial={{ scale: 0.8, y: 50, rotate: -5 }}
+            animate={{ scale: 1, y: 0, rotate: 0 }}
+            exit={{ scale: 0.8, y: 50, rotate: 5 }}
+            transition={{ type: "spring", damping: 20, stiffness: 200 }}
+            className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl border border-white/20 dark:border-slate-700/50 shadow-2xl max-w-sm w-full relative z-[5001] overflow-hidden flex flex-col p-6 items-center text-center gap-4"
+          >
             <div className="flex justify-between items-center w-full border-b border-slate-100 dark:border-slate-800/60 pb-3">
               <div className="flex items-center gap-1.5">
                 <span className="text-lg">🎰</span>
@@ -677,9 +768,10 @@ function App() {
                 <span>{gachaResult ? 'もう一度引く' : 'ガチャを回す'}</span>
               </button>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       )}
+      </AnimatePresence>
 
       {/* 実績解除トースト通知 */}
       {achievementToast && (

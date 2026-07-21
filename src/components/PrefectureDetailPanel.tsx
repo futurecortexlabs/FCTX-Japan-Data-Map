@@ -11,6 +11,7 @@ import { Area, AreaChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, Tool
 import { simulateFire } from '../utils/fireSimulation';
 import { generateNomadRoute } from '../utils/nomadPlanner';
 import { UtopiaBoardingPass } from './UtopiaBoardingPass';
+import { motion } from 'framer-motion';
 
 interface PrefectureDetailPanelProps {
   prefectures: PrefectureData[];
@@ -1285,13 +1286,32 @@ export const PrefectureDetailPanel: React.FC<PrefectureDetailPanelProps> = ({
                         <h2 className="text-xl font-black text-slate-800 dark:text-white flex items-center gap-1.5 mt-0.5">
                           <MapPin className="w-5 h-5 text-rose-500" />
                           {prefecture.prefName}
-                          <button
-                            onClick={() => onToggleKeep(prefecture.prefCode, prefecture.prefName, prefecture.year)}
+                          <motion.button
+                            whileHover={{ scale: 1.15, rotate: 10 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={(e) => {
+                              onToggleKeep(prefecture.prefCode, prefecture.prefName, prefecture.year);
+                              if (!isKeeped) {
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                import('canvas-confetti').then((confetti) => {
+                                  confetti.default({
+                                    particleCount: 30,
+                                    spread: 40,
+                                    origin: { 
+                                      x: (rect.left + rect.width / 2) / window.innerWidth,
+                                      y: (rect.top + rect.height / 2) / window.innerHeight
+                                    },
+                                    colors: ['#f59e0b', '#fbbf24', '#fef3c7'],
+                                    ticks: 50
+                                  });
+                                });
+                              }
+                            }}
                             className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800/40 text-slate-400 hover:text-amber-500 transition-all cursor-pointer flex items-center justify-center"
                             title={isKeeped ? 'キープリストから削除' : 'キープリストに追加'}
                           >
                             <Bookmark className={`w-4 h-4 transition-all duration-300 ${isKeeped ? 'fill-amber-500 text-amber-500 scale-110' : 'text-slate-400 dark:text-slate-500'}`} />
-                          </button>
+                          </motion.button>
                           
                           <button
                             onClick={() => handleGenerateCertificate()}
@@ -1527,13 +1547,25 @@ export const PrefectureDetailPanel: React.FC<PrefectureDetailPanelProps> = ({
               })()}
             </div>
 
-            <button
-              onClick={() => setShowBoardingPass(true)}
-              className="w-full py-4 mt-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-black text-sm rounded-2xl shadow-xl shadow-indigo-600/20 transition-all hover:scale-[1.02] flex items-center justify-center gap-2"
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => {
+                setShowBoardingPass(true);
+                import('canvas-confetti').then((confetti) => {
+                  confetti.default({
+                    particleCount: 150,
+                    spread: 80,
+                    origin: { y: 0.6 },
+                    colors: ['#4f46e5', '#ec4899', '#f59e0b']
+                  });
+                });
+              }}
+              className="w-full py-4 mt-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-black text-sm rounded-2xl shadow-xl shadow-indigo-600/20 transition-all flex items-center justify-center gap-2"
             >
-              <Sparkles className="w-5 h-5" />
+              <Sparkles className="w-5 h-5 animate-pulse" />
               {prefecture.prefName}への移住を決断する
-            </button>
+            </motion.button>
           </div>
         ) : activeTab === 'nomad' && prefectures.length === 3 ? (
           <div className="flex flex-col gap-4 h-full min-h-0 overflow-y-auto pr-1">

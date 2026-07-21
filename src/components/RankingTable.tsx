@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Trophy, Search } from 'lucide-react';
 import { type PrefectureData, type MetricType } from '../types/prefecture';
 import { METRIC_CONFIGS } from './MetricSelector';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface RankingTableProps {
   data: PrefectureData[];
@@ -114,7 +115,8 @@ export const RankingTable: React.FC<RankingTableProps> = ({
               <th className="py-2 px-2 text-right w-12">偏差値</th>
             </tr>
           </thead>
-          <tbody>
+          <motion.tbody layout>
+            <AnimatePresence mode="popLayout">
             {filteredData.map((pref, index) => {
               const rank = index + 1;
               const isSelected = selectedPrefCodes.includes(pref.prefCode);
@@ -123,7 +125,12 @@ export const RankingTable: React.FC<RankingTableProps> = ({
               const scoreVal = scoreKey ? pref[scoreKey] : undefined;
 
               return (
-                <tr
+                <motion.tr
+                  layout
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ duration: 0.2, delay: index < 20 ? index * 0.03 : 0 }}
                   key={pref.prefCode}
                   onClick={() => onSelectPrefecture(pref.prefCode)}
                   className={`border-b border-slate-100/30 dark:border-slate-800/20 text-xs transition-all duration-200 cursor-pointer ${
@@ -146,18 +153,19 @@ export const RankingTable: React.FC<RankingTableProps> = ({
                       ? (scoreVal as number).toFixed(0)
                       : '-'}
                   </td>
-                </tr>
+                </motion.tr>
               );
             })}
+            </AnimatePresence>
 
             {filteredData.length === 0 && (
-              <tr>
+              <motion.tr initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                 <td colSpan={4} className="py-6 text-center text-slate-400 text-xs">
                   見つかりません
                 </td>
-              </tr>
+              </motion.tr>
             )}
-          </tbody>
+          </motion.tbody>
         </table>
       </div>
     </div>
