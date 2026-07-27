@@ -1519,7 +1519,7 @@ export const PrefectureDetailPanel: React.FC<PrefectureDetailPanelProps> = ({
                     
                     <div className="h-48 w-full mt-2">
                       <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={sim.trajectory} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <AreaChart data={sim.trajectory} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                           <defs>
                             <linearGradient id="colorTokyo" x1="0" y1="0" x2="0" y2="1">
                               <stop offset="5%" stopColor="#94a3b8" stopOpacity={0.3}/>
@@ -1532,10 +1532,22 @@ export const PrefectureDetailPanel: React.FC<PrefectureDetailPanelProps> = ({
                           </defs>
                           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" opacity={0.2} />
                           <XAxis dataKey="age" tick={{fontSize: 10}} tickLine={false} axisLine={false} />
-                          <YAxis tick={{fontSize: 10}} tickLine={false} axisLine={false} tickFormatter={(v) => `${v}万`} />
+                          <YAxis 
+                            tick={{fontSize: 10}} 
+                            tickLine={false} 
+                            axisLine={false} 
+                            width={50}
+                            tickFormatter={(v) => Number(v) >= 10000 ? `${(Number(v) / 10000).toFixed(1).replace('.0', '')}億` : `${v}万`} 
+                          />
                           <Tooltip 
                             contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '11px' }}
                             itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
+                            formatter={(value: any, name: any) => [
+                              Number(value) >= 10000 
+                                ? `${(Number(value) / 10000).toFixed(1).replace('.0', '')}億円` 
+                                : `${Number(value).toLocaleString()}万円`,
+                              name
+                            ]}
                           />
                           <Area type="monotone" dataKey="tokyoAssets" name="東京での資産" stroke="#94a3b8" fillOpacity={1} fill="url(#colorTokyo)" />
                           <Area type="monotone" dataKey="utopiaAssets" name={`${prefecture.prefName}での資産`} stroke="#8b5cf6" strokeWidth={3} fillOpacity={1} fill="url(#colorUtopia)" />
@@ -1642,8 +1654,11 @@ export const TrendLineChart: React.FC<TrendLineChartProps> = ({
   };
 
   const allValues = prefDataMap.flatMap((d) => d.history.map(getMetricValue));
-  const minVal = allValues.length > 0 ? Math.min(...allValues) : 0;
-  const maxVal = allValues.length > 0 ? Math.max(...allValues) : 100;
+  const dataMin = allValues.length > 0 ? Math.min(...allValues) : 0;
+  const dataMax = allValues.length > 0 ? Math.max(...allValues) : 100;
+  const diff = dataMax - dataMin;
+  const minVal = dataMin === dataMax ? Math.max(0, dataMin - 10) : Math.max(0, dataMin - diff * 0.15);
+  const maxVal = dataMin === dataMax ? dataMax + 10 : dataMax + diff * 0.15;
   const valRange = maxVal - minVal || 1;
 
   const svgWidth = 320;

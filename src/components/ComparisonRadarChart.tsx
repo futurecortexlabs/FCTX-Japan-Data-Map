@@ -71,7 +71,7 @@ export const ComparisonRadarChart: React.FC<ComparisonRadarChartProps> = ({
             />
             <PolarRadiusAxis 
               angle={30} 
-              domain={[20, 80]} 
+              domain={[0, 100]} 
               tick={{ fill: '#94a3b8', fontSize: 10 }}
             />
             <Tooltip 

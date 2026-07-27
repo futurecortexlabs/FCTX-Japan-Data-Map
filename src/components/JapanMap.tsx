@@ -1,10 +1,11 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet';
 import type { LeafletMouseEvent, PathOptions, GeoJSON as LGeoJSON } from 'leaflet';
 import type { PrefectureData, MetricType } from '../types/prefecture';
 import { METRIC_CONFIGS } from './MetricSelector';
 import { getColorForScore } from '../utils/colorScale';
 import geoJsonData from '../data/prefectures.json';
+import { motion, useMotionValue, useTransform } from 'framer-motion';
 
 interface JapanMapProps {
   data: PrefectureData[];
@@ -52,12 +53,35 @@ export const JapanMap: React.FC<JapanMapProps> = ({
   selectedYear,
   flashEffect,
 }) => {
-  const config = METRIC_CONFIGS[currentMetric];
   const geoJsonLayerRef = useRef<LGeoJSON>(null);
-
-  // 日本の中心座標 (Leaflet初期位置)
-  const position: [number, number] = [37.5, 137.5];
+  const position: [number, number] = [38.0, 137.5];
   const zoomLevel = 5;
+
+  const config = METRIC_CONFIGS[currentMetric];
+
+  // Scanner Effect State
+  const [isScanning, setIsScanning] = useState(false);
+  useEffect(() => {
+    setIsScanning(true);
+    const timer = setTimeout(() => setIsScanning(false), 1500);
+    return () => clearTimeout(timer);
+  }, [currentMetric, selectedYear]);
+
+  // 3D Tilt Effect State
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const rotateX = useTransform(y, [-300, 300], [5, -5]);
+  const rotateY = useTransform(x, [-300, 300], [-5, 5]);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    x.set(e.clientX - rect.left - rect.width / 2);
+    y.set(e.clientY - rect.top - rect.height / 2);
+  };
+  const handleMouseLeave = () => {
+    x.set(0);
+    y.set(0);
+  };
 
   const formatValue = (val?: number) => {
     if (val === undefined || isNaN(val)) return 'データ未登録';
@@ -172,7 +196,17 @@ export const JapanMap: React.FC<JapanMapProps> = ({
   };
 
   return (
-    <div className={`w-full h-full min-h-0 glass-neon-border bg-slate-100/50 dark:bg-slate-900/40 rounded-xl overflow-hidden shadow-[0_8px_32px_0_rgba(31,38,135,0.15)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] border border-slate-200/50 dark:border-slate-800/50 relative flex flex-col transition-all duration-500 ${flashEffect || ''}`}>
+    <motion.div 
+      className={`w-full h-full min-h-0 glass-neon-border bg-slate-100/50 dark:bg-slate-900/40 rounded-xl overflow-hidden shadow-[0_8px_32px_0_rgba(31,38,135,0.15)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] border border-slate-200/50 dark:border-slate-800/50 relative flex flex-col transition-colors duration-500 ${flashEffect || ''}`}
+      style={{ perspective: 1000 }}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+    >
+      <motion.div
+        className="w-full h-full relative"
+        style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      >
       <style>{`
         @keyframes flashRed {
           0%, 100% { border-color: rgba(226, 232, 240, 0.5); box-shadow: inset 0 2px 4px 0 rgba(0,0,0,0.06); }
@@ -187,6 +221,14 @@ export const JapanMap: React.FC<JapanMapProps> = ({
         }
         .flash-covid {
           animation: flashCyan 1.5s ease-in-out;
+        }
+        @keyframes scanline {
+          0% { transform: translateY(-100%); }
+          100% { transform: translateY(300%); }
+        }
+        .animate-scanline {
+          animation: scanline 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+          height: 30%;
         }
       `}</style>
       <MapContainer
@@ -213,6 +255,13 @@ export const JapanMap: React.FC<JapanMapProps> = ({
         <MapController />
       </MapContainer>
 
+      {/* スキャナー（データアート効果） */}
+      {isScanning && (
+        <div className="absolute inset-0 pointer-events-none z-[2000] overflow-hidden rounded-xl mix-blend-overlay">
+          <div className="w-full bg-gradient-to-b from-transparent via-indigo-500/80 to-transparent animate-scanline border-b-2 border-indigo-400 shadow-[0_0_20px_rgba(99,102,241,0.5)]" />
+        </div>
+      )}
+
       {/* 右上 年次オーバーレイ表示 */}
       <div className="absolute top-4 right-4 bg-slate-900/10 dark:bg-white/5 backdrop-blur-[1px] px-4 py-2 rounded-xl pointer-events-none select-none z-[1000]">
         <span className="text-5xl font-black tracking-tighter text-slate-800/20 dark:text-white/10 tabular-nums">
@@ -237,7 +286,8 @@ export const JapanMap: React.FC<JapanMapProps> = ({
           <span>データ未登録</span>
         </div>
       </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 };
 
