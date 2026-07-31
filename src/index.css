@@ -83,3 +83,51 @@
   border: 1px solid rgba(139, 92, 246, 0.3);
   background: rgba(15, 23, 42, 0.6);
 }
+
+/* --- Retro RPG Mode --- */
+.retro-mode {
+  font-family: 'DotGothic16', sans-serif !important;
+  background-color: #000 !important;
+}
+
+.retro-mode * {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+.retro-mode .glass-neon-border,
+.retro-mode .bg-white\/80,
+.retro-mode .bg-slate-900\/80,
+.retro-mode .bg-white\/10 {
+  background: #000 !important;
+  border: 2px solid #fff !important;
+  color: #fff !important;
+}
+
+.retro-mode .text-slate-800,
+.retro-mode .text-slate-500,
+.retro-mode .text-slate-600 {
+  color: #fff !important;
+}
+
+/* CRT Scanline Effect */
+.retro-mode::after {
+  content: " ";
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+  z-index: 9999;
+  background-size: 100% 4px, 6px 100%;
+  pointer-events: none;
+}
+
+.retro-mode .leaflet-container {
+  background-color: #000 !important;
+  filter: contrast(1.5) grayscale(1) invert(1) !important;
+}

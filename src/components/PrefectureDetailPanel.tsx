@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense, lazy } from 'react';
 import { MapPin, Coins, Users, Building2, Award, Coffee, Soup, Sparkles, Sun, Sliders, Globe, HelpCircle, RotateCcw, Heart, Flame, Bookmark, Brain, Calendar, Wind, Activity } from 'lucide-react';
 import { type PrefectureData, type MetricWeights, type MetricType } from '../types/prefecture';
 import { WeightConfigPanel } from './WeightConfigPanel';
@@ -10,7 +10,13 @@ import { ACHIEVEMENTS } from '../utils/achievements';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { simulateFire } from '../utils/fireSimulation';
 import { generateNomadRoute } from '../utils/nomadPlanner';
-import { UtopiaBoardingPass } from './UtopiaBoardingPass';
+
+const UtopiaBoardingPass = lazy(() => import('./UtopiaBoardingPass').then(m => ({ default: m.UtopiaBoardingPass })));
+const VSBattleScreen = lazy(() => import('./VSBattleScreen').then(m => ({ default: m.VSBattleScreen })));
+const RetroBattleScreen = lazy(() => import('./RetroBattleScreen').then(m => ({ default: m.RetroBattleScreen })));
+
+import { speakText, stopSpeech } from '../utils/speech';
+import confetti from 'canvas-confetti';
 import { motion } from 'framer-motion';
 
 interface PrefectureDetailPanelProps {
@@ -25,6 +31,7 @@ interface PrefectureDetailPanelProps {
   activeTab: 'details' | 'weights' | 'quiz' | 'keep' | 'ai' | 'multibase' | 'fire' | 'nomad';
   onActiveTabChange: (tab: 'details' | 'weights' | 'quiz' | 'keep' | 'ai' | 'multibase' | 'fire' | 'nomad') => void;
   unlockedAchievements: string[];
+  isRetroMode?: boolean;
 }
 
 export const PrefectureDetailPanel: React.FC<PrefectureDetailPanelProps> = ({
@@ -39,10 +46,21 @@ export const PrefectureDetailPanel: React.FC<PrefectureDetailPanelProps> = ({
   activeTab,
   onActiveTabChange,
   unlockedAchievements,
+  isRetroMode,
 }) => {
   const [compTab, setCompTab] = useState<'radar' | 'duel' | 'dual'>('radar');
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const prefecture = prefectures.length > 0 ? prefectures[0] : undefined;
+
+  // Stop speech when tab changes or unmounts
+  useEffect(() => {
+    return () => {
+      stopSpeech();
+      setIsSpeaking(false);
+    };
+  }, [activeTab, prefecture]);
   const [showBoardingPass, setShowBoardingPass] = useState(false);
+  const [showBattleScreen, setShowBattleScreen] = useState(false);
 
   // Tab guard
   useEffect(() => {
@@ -231,18 +249,42 @@ export const PrefectureDetailPanel: React.FC<PrefectureDetailPanelProps> = ({
 
     return (
       <div className="flex flex-col gap-4 h-full min-h-0 overflow-y-auto pr-1 text-left">
-        <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
-          <div className="w-7 h-7 rounded-full bg-indigo-655 text-white flex items-center justify-center text-xs font-black shadow-md">
-            AI
+        <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-2 justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-full bg-indigo-655 text-white flex items-center justify-center text-xs font-black shadow-md">
+              AI
+            </div>
+            <div>
+              <h4 className="text-xs font-black text-slate-800 dark:text-white leading-none">
+                移住コンシェルジュ
+              </h4>
+              <span className="text-[9px] text-indigo-500 dark:text-indigo-400 font-bold">
+                Utopia AI Agent
+              </span>
+            </div>
           </div>
-          <div>
-            <h4 className="text-xs font-black text-slate-800 dark:text-white leading-none">
-              移住コンシェルジュ
-            </h4>
-            <span className="text-[9px] text-indigo-500 dark:text-indigo-400 font-bold">
-              Utopia AI Agent
-            </span>
-          </div>
+          <button
+            onClick={() => {
+              if (isSpeaking) {
+                stopSpeech();
+                setIsSpeaking(false);
+              } else {
+                const fullText = `${advice.diagnosis}。おすすめのステップは、${advice.steps.join('。')}。${advice.warning}`;
+                speakText(
+                  fullText,
+                  () => setIsSpeaking(false),
+                  () => setIsSpeaking(true)
+                );
+              }
+            }}
+            className={`px-3 py-1.5 rounded-full text-[10px] font-bold shadow-sm transition-colors border ${
+              isSpeaking 
+                ? 'bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/40 dark:text-rose-300 dark:border-rose-800' 
+                : 'bg-indigo-50 text-indigo-650 border-indigo-200 hover:bg-indigo-100 dark:bg-indigo-900/40 dark:text-indigo-300 dark:border-indigo-800 dark:hover:bg-indigo-900/60'
+            }`}
+          >
+            {isSpeaking ? '⏹️ 音声停止' : '🗣️ フルボイス再生'}
+          </button>
         </div>
 
         {/* 診断文 */}
@@ -525,45 +567,60 @@ export const PrefectureDetailPanel: React.FC<PrefectureDetailPanelProps> = ({
 
     // Q2: Cafe (0) vs Nature (1)
     if (ans[1] === 0) {
-      newWeights.starbucksCount = 40;
-      newWeights.attractiveness = 10;
+      newWeights.starbucksCount = 45;
+      newWeights.attractiveness = 20;
     } else {
-      newWeights.starbucksCount = 10;
-      newWeights.attractiveness = 40;
+      newWeights.onsenCount = 45;
+      newWeights.attractiveness = 20;
     }
 
     // Q3: Gourmet (0) vs Simple (1)
     if (ans[2] === 0) {
       newWeights.ramenCount = 45;
     } else {
-      newWeights.ramenCount = 5;
+      newWeights.hospitalCount = 20;
+      newWeights.childcareScore = 20;
     }
 
     // Q4: Climate (0) vs No Pref (1)
     if (ans[3] === 0) {
       newWeights.sunshineHours = 45;
+      newWeights.pollenLevel = 5;
     } else {
-      newWeights.sunshineHours = 5;
+      newWeights.sunshineHours = 10;
+      newWeights.pollenLevel = 30;
     }
 
     return newWeights;
   };
 
-  const calculateBestPrefecture = (tempWeights: MetricWeights) => {
+  const calculateBestPrefecture = (tempWeights: MetricWeights, ans: number[] = []) => {
     if (!allPrefectures || allPrefectures.length === 0) return undefined;
     
-    let bestPref: PrefectureData | undefined = undefined;
-    let highestScore = -1;
+    // 最新年のデータのみを対象とする
+    const latestYear = Math.max(...allPrefectures.map(p => p.year));
+    const currentYearData = allPrefectures.filter(p => p.year === latestYear);
 
-    for (const pref of allPrefectures) {
-      const baseUrban = pref.baseUrbanScore;
+    const scoredPrefectures: { pref: PrefectureData; score: number }[] = [];
+
+    for (const pref of currentYearData) {
+      const baseUrban = pref.baseUrbanScore || 50;
+      const landPrice = pref.landPriceScore || 50;
       
       let weightedSum = 0;
       let weightTotal = 0;
       
-      if (baseUrban !== undefined && !isNaN(baseUrban)) {
-        weightedSum += baseUrban * 30;
-        weightTotal += 30;
+      // Q1: コスト(0) vs 利便性(1)
+      if (ans.length > 0 && ans[0] === 0) {
+        // 固定費を抑えたい: 地価が低い（= 100 - 偏差値が高い）ほど高スコア
+        weightedSum += (100 - landPrice) * 50;
+        weightTotal += 50;
+        weightedSum += baseUrban * 10;
+        weightTotal += 10;
+      } else {
+        // 利便性重視
+        weightedSum += baseUrban * 60;
+        weightTotal += 60;
       }
 
       const scoreMappings = [
@@ -571,6 +628,10 @@ export const PrefectureDetailPanel: React.FC<PrefectureDetailPanelProps> = ({
         { score: pref.ramenScore, weight: tempWeights.ramenCount },
         { score: pref.attractivenessScore, weight: tempWeights.attractiveness },
         { score: pref.sunshineHoursScore, weight: tempWeights.sunshineHours },
+        { score: pref.onsenScore, weight: tempWeights.onsenCount },
+        { score: pref.hospitalScore, weight: tempWeights.hospitalCount },
+        { score: pref.pollenScore, weight: tempWeights.pollenLevel },
+        { score: pref.childcareScoreScore, weight: tempWeights.childcareScore },
       ];
 
       for (const item of scoreMappings) {
@@ -580,14 +641,19 @@ export const PrefectureDetailPanel: React.FC<PrefectureDetailPanelProps> = ({
         }
       }
 
-      const totalScore = weightTotal > 0 ? weightedSum / weightTotal : 0;
-      if (totalScore > highestScore) {
-        highestScore = totalScore;
-        bestPref = pref;
-      }
+      const totalScore = weightTotal > 0 ? (weightedSum / weightTotal) : 0;
+      scoredPrefectures.push({ pref, score: totalScore });
     }
 
-    return bestPref;
+    // スコア降順にソート
+    scoredPrefectures.sort((a, b) => b.score - a.score);
+
+    // 上位15件を候補とする（エンタメ重視のルーレット方式）
+    const candidates = scoredPrefectures.slice(0, 15);
+    
+    // 候補の中からランダムに1件を選択
+    const randomIndex = Math.floor(Math.random() * candidates.length);
+    return candidates[randomIndex].pref;
   };
 
   const questions = [
@@ -633,7 +699,7 @@ export const PrefectureDetailPanel: React.FC<PrefectureDetailPanelProps> = ({
       setQuizStep(quizStep + 1);
     } else {
       const finalWeights = calculateWeightsFromAnswers(updatedAnswers);
-      const best = calculateBestPrefecture(finalWeights);
+      const best = calculateBestPrefecture(finalWeights, updatedAnswers);
       
       setQuizResultPref(best);
       setQuizFinished(true);
@@ -1157,6 +1223,13 @@ export const PrefectureDetailPanel: React.FC<PrefectureDetailPanelProps> = ({
                           </div>
                         </div>
 
+                        <button
+                          onClick={() => setShowBattleScreen(true)}
+                          className="w-full py-2 bg-gradient-to-r from-rose-500 to-blue-500 hover:from-rose-600 hover:to-blue-600 text-white font-black rounded-lg text-xs shadow-lg transform transition-transform hover:scale-105 active:scale-95 shrink-0 mt-1"
+                        >
+                          ⚔️ フルスクリーン・バトル開始！ ⚔️
+                        </button>
+
                         {/* 対戦内容 */}
                         <div className="flex flex-col gap-3 my-1">
                           {duelCategories.map((cat, idx) => {
@@ -1289,21 +1362,15 @@ export const PrefectureDetailPanel: React.FC<PrefectureDetailPanelProps> = ({
                           <motion.button
                             whileHover={{ scale: 1.15, rotate: 10 }}
                             whileTap={{ scale: 0.9 }}
-                            onClick={(e) => {
+                            onClick={() => {
                               onToggleKeep(prefecture.prefCode, prefecture.prefName, prefecture.year);
                               if (!isKeeped) {
-                                const rect = e.currentTarget.getBoundingClientRect();
-                                import('canvas-confetti').then((confetti) => {
-                                  confetti.default({
-                                    particleCount: 30,
-                                    spread: 40,
-                                    origin: { 
-                                      x: (rect.left + rect.width / 2) / window.innerWidth,
-                                      y: (rect.top + rect.height / 2) / window.innerHeight
-                                    },
-                                    colors: ['#f59e0b', '#fbbf24', '#fef3c7'],
-                                    ticks: 50
-                                  });
+                                confetti({
+                                  particleCount: 30,
+                                  spread: 40,
+                                  origin: { y: 0.5 },
+                                  colors: ['#f59e0b', '#fbbf24', '#fef3c7'],
+                                  ticks: 50
                                 });
                               }
                             }}
@@ -1564,13 +1631,11 @@ export const PrefectureDetailPanel: React.FC<PrefectureDetailPanelProps> = ({
               whileTap={{ scale: 0.95 }}
               onClick={() => {
                 setShowBoardingPass(true);
-                import('canvas-confetti').then((confetti) => {
-                  confetti.default({
-                    particleCount: 150,
-                    spread: 80,
-                    origin: { y: 0.6 },
-                    colors: ['#4f46e5', '#ec4899', '#f59e0b']
-                  });
+                confetti({
+                  particleCount: 150,
+                  spread: 80,
+                  origin: { y: 0.6 },
+                  colors: ['#4f46e5', '#ec4899', '#f59e0b']
                 });
               }}
               className="w-full py-4 mt-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-black text-sm rounded-2xl shadow-xl shadow-indigo-600/20 transition-all flex items-center justify-center gap-2"
@@ -1614,7 +1679,27 @@ export const PrefectureDetailPanel: React.FC<PrefectureDetailPanelProps> = ({
       </div>
 
       {showBoardingPass && prefecture && (
-        <UtopiaBoardingPass prefecture={prefecture} onClose={() => setShowBoardingPass(false)} />
+        <Suspense fallback={<div />}>
+          <UtopiaBoardingPass prefecture={prefecture} onClose={() => setShowBoardingPass(false)} />
+        </Suspense>
+      )}
+
+      {showBattleScreen && prefectures.length >= 2 && (
+        <Suspense fallback={<div />}>
+          {isRetroMode ? (
+            <RetroBattleScreen 
+              pref1={prefectures[0]} 
+              pref2={prefectures[1]} 
+              onClose={() => setShowBattleScreen(false)} 
+            />
+          ) : (
+            <VSBattleScreen 
+              pref1={prefectures[0]} 
+              pref2={prefectures[1]} 
+              onClose={() => setShowBattleScreen(false)} 
+            />
+          )}
+        </Suspense>
       )}
     </div>
   );

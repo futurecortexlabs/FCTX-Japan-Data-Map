@@ -4,8 +4,8 @@ import type { LeafletMouseEvent, PathOptions, GeoJSON as LGeoJSON } from 'leafle
 import type { PrefectureData, MetricType } from '../types/prefecture';
 import { METRIC_CONFIGS } from './MetricSelector';
 import { getColorForScore } from '../utils/colorScale';
-import geoJsonData from '../data/prefectures.json';
-import { motion, useMotionValue, useTransform } from 'framer-motion';
+import geoJsonUrl from '../data/prefectures.json?url';
+import { motion } from 'framer-motion';
 
 interface JapanMapProps {
   data: PrefectureData[];
@@ -14,6 +14,7 @@ interface JapanMapProps {
   onSelectPrefecture: (prefCode: number) => void;
   selectedYear: number;
   flashEffect?: string;
+  isRetroMode?: boolean;
 }
 
 const MapController: React.FC = () => {
@@ -45,19 +46,29 @@ const MapController: React.FC = () => {
   );
 };
 
-export const JapanMap: React.FC<JapanMapProps> = ({
+export const JapanMap: React.FC<JapanMapProps> = React.memo(({
   data,
   currentMetric,
   selectedPrefCodes,
   onSelectPrefecture,
   selectedYear,
   flashEffect,
+  isRetroMode,
 }) => {
   const geoJsonLayerRef = useRef<LGeoJSON>(null);
   const position: [number, number] = [38.0, 137.5];
   const zoomLevel = 5;
 
   const config = METRIC_CONFIGS[currentMetric];
+
+  // GeoJSON data fetching
+  const [geoJsonData, setGeoJsonData] = useState<any>(null);
+  useEffect(() => {
+    fetch(geoJsonUrl)
+      .then(res => res.json())
+      .then(data => setGeoJsonData(data))
+      .catch(err => console.error("Failed to load geojson:", err));
+  }, []);
 
   // Scanner Effect State
   const [isScanning, setIsScanning] = useState(false);
@@ -66,22 +77,6 @@ export const JapanMap: React.FC<JapanMapProps> = ({
     const timer = setTimeout(() => setIsScanning(false), 1500);
     return () => clearTimeout(timer);
   }, [currentMetric, selectedYear]);
-
-  // 3D Tilt Effect State
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-  const rotateX = useTransform(y, [-300, 300], [5, -5]);
-  const rotateY = useTransform(x, [-300, 300], [-5, 5]);
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    x.set(e.clientX - rect.left - rect.width / 2);
-    y.set(e.clientY - rect.top - rect.height / 2);
-  };
-  const handleMouseLeave = () => {
-    x.set(0);
-    y.set(0);
-  };
 
   const formatValue = (val?: number) => {
     if (val === undefined || isNaN(val)) return 'データ未登録';
@@ -182,7 +177,6 @@ export const JapanMap: React.FC<JapanMapProps> = ({
           weight: isSelected ? 3.0 : 2.5,
           color: isSelected ? '#a855f7' : '#38bdf8',
         });
-        targetLayer.bringToFront();
       },
       mouseout: (e: LeafletMouseEvent) => {
         const targetLayer = e.target;
@@ -196,15 +190,16 @@ export const JapanMap: React.FC<JapanMapProps> = ({
   };
 
   return (
-    <motion.div 
-      className={`w-full h-full min-h-0 glass-neon-border bg-slate-100/50 dark:bg-slate-900/40 rounded-xl overflow-hidden shadow-[0_8px_32px_0_rgba(31,38,135,0.15)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] border border-slate-200/50 dark:border-slate-800/50 relative flex flex-col transition-colors duration-500 ${flashEffect || ''}`}
-      style={{ perspective: 1000 }}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
+    <motion.div
+      className={`h-full w-full relative group rounded-2xl overflow-hidden shadow-inner border-[6px] ${
+        isRetroMode ? 'border-transparent' : 'border-slate-200/50 dark:border-slate-800/50'
+      } ${
+        flashEffect === 'lehman' ? 'flash-lehman' : flashEffect === 'covid' ? 'flash-covid' : ''
+      }`}
+      style={{ perspective: 1200 }}
     >
-      <motion.div
+      <motion.div 
         className="w-full h-full relative"
-        style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
       >
       <style>{`
@@ -231,29 +226,43 @@ export const JapanMap: React.FC<JapanMapProps> = ({
           height: 30%;
         }
       `}</style>
-      <MapContainer
-        center={position}
-        zoom={zoomLevel}
-        minZoom={4}
-        maxZoom={8}
-        scrollWheelZoom={true}
-        zoomControl={false}
-        className="w-full h-full"
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-        />
+          <MapContainer
+            center={position}
+            zoom={zoomLevel}
+            zoomControl={false}
+            scrollWheelZoom={true}
+            doubleClickZoom={true}
+            dragging={true}
+            className="w-full h-full bg-slate-50/50 dark:bg-slate-900/50"
+            style={{ minHeight: '100%', minWidth: '100%' }}
+            attributionControl={false}
+          >
+            {/* Base tile layer (carto light/dark without labels) */}
+            <TileLayer
+              url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png"
+              attribution='&copy; <a href="https://carto.com/">carto.com</a>'
+              className="opacity-40 grayscale"
+            />
+            {geoJsonData && (
+              <GeoJSON
+                ref={geoJsonLayerRef}
+                data={geoJsonData as any}
+                style={getFeatureStyle}
+                onEachFeature={onEachFeature}
+              />
+            )}
+            <MapController />
+          </MapContainer>
 
-        <GeoJSON
-          ref={geoJsonLayerRef}
-          data={geoJsonData as any}
-          style={getFeatureStyle}
-          onEachFeature={onEachFeature}
-        />
-        
-        <MapController />
-      </MapContainer>
+          {/* Initial Loading Skeleton */}
+          {!geoJsonData && (
+            <div className="absolute inset-0 z-[400] flex flex-col items-center justify-center bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-sm">
+              <div className="w-12 h-12 border-4 border-indigo-200 dark:border-indigo-900 border-t-indigo-600 dark:border-t-indigo-400 rounded-full animate-spin mb-4" />
+              <p className="text-sm font-bold text-slate-500 dark:text-slate-400 animate-pulse">
+                日本地図データを読み込み中...
+              </p>
+            </div>
+          )}
 
       {/* スキャナー（データアート効果） */}
       {isScanning && (
@@ -281,13 +290,8 @@ export const JapanMap: React.FC<JapanMapProps> = ({
             <span>高 (偏差値 65)</span>
           </div>
         </div>
-        <div className="flex items-center gap-2 border-t border-slate-100 dark:border-slate-800 pt-2 text-[10px] text-slate-500 dark:text-slate-400">
-          <div className="w-3.5 h-3.5 bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded" />
-          <span>データ未登録</span>
-        </div>
       </div>
       </motion.div>
     </motion.div>
   );
-};
-
+});

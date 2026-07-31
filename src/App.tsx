@@ -1,15 +1,18 @@
-import { useState, useEffect } from 'react';
-import { Sun, Moon, Map, Upload, X } from 'lucide-react';
+import { useState, useEffect, Suspense, lazy } from 'react';
+import { Sun, Moon, Map, Upload, X, Play, Pause } from 'lucide-react';
 import { type MetricType, type PrefectureData } from './types/prefecture';
 import { generatePrefectureCatchphrase } from './utils/catchphrase';
 import { HISTORICAL_MILESTONES } from './data/milestones';
-import { MetricSelector } from './components/MetricSelector';
+import { MetricSelector, METRIC_CONFIGS } from './components/MetricSelector';
 import { JapanMap } from './components/JapanMap';
 import { PrefectureDetailPanel } from './components/PrefectureDetailPanel';
 import { RankingTable } from './components/RankingTable';
 import { TopChart } from './components/TopChart';
-import { CsvUploader } from './components/CsvUploader';
+const CsvUploader = lazy(() => import('./components/CsvUploader').then(module => ({ default: module.CsvUploader })));
 import { TimelineControl } from './components/TimelineControl';
+import { NewsTicker } from './components/NewsTicker';
+import { WeatherEffects } from './components/WeatherEffects';
+import { playScanSound, playGachaSound, playGachaWinSound, playClickSound } from './utils/audio';
 import sampleCsvUrl from './data/sample_prefecture_data.csv?url';
 import { checkNewAchievements, type UserStats, type Achievement } from './utils/achievements';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -18,10 +21,13 @@ import confetti from 'canvas-confetti';
 import { useDarkMode } from './hooks/useDarkMode';
 import { useUrlState } from './hooks/useUrlState';
 import { usePrefectureData } from './hooks/usePrefectureData';
+import { useKonamiCode } from './hooks/useKonamiCode';
+import { playRetroUnlockSound, startRetroBGM, stopRetroBGM } from './utils/audio';
 
 function App() {
   const [showUploader, setShowUploader] = useState<boolean>(false);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [isRetroMode, setIsRetroMode] = useState<boolean>(false);
 
   // ガチャ状態
   const [showGacha, setShowGacha] = useState<boolean>(false);
@@ -106,10 +112,37 @@ function App() {
         colors: ['#4f46e5', '#10b981', '#f59e0b']
       });
 
-      const timer = setTimeout(() => setAchievementToast(null), 4000);
+      const timer = setTimeout(() => { setAchievementToast(null); }, 5000);
       return () => clearTimeout(timer);
     }
-  }, [userStats, unlockedAchievements]);
+  }, [achievementToast]);
+
+  // Retro RPG Mode Konami Code Hook
+  useKonamiCode(() => {
+    setIsRetroMode(prev => {
+      const next = !prev;
+      if (next) {
+        playRetroUnlockSound();
+        // Give an achievement for finding the secret
+        setUnlockedAchievements(curr => {
+          if (!curr.includes('retro_gamer')) return [...curr, 'retro_gamer'];
+          return curr;
+        });
+      }
+      return next;
+    });
+  });
+
+  // Apply retro mode to body and manage BGM
+  useEffect(() => {
+    if (isRetroMode) {
+      document.body.classList.add('retro-mode');
+      startRetroBGM();
+    } else {
+      document.body.classList.remove('retro-mode');
+      stopRetroBGM();
+    }
+  }, [isRetroMode]);
 
   const triggerUnlockCheck = (updater: Partial<UserStats> | ((prev: UserStats) => Partial<UserStats>)) => {
     setUserStats(prev => {
@@ -184,6 +217,31 @@ function App() {
   const selectedPrefectures = selectedPrefCodes
     .map(code => currentYearData.find(p => p.prefCode === code))
     .filter((p): p is PrefectureData => p !== undefined);
+
+  useEffect(() => {
+    let interval: number;
+    if (isPlaying) {
+      interval = window.setInterval(() => {
+        setCurrentMetric((prev) => {
+          const metrics = Object.keys(METRIC_CONFIGS) as MetricType[];
+          const nextIdx = (metrics.indexOf(prev) + 1) % metrics.length;
+          playScanSound();
+          return metrics[nextIdx];
+        });
+        
+        // Randomly change the year occasionally for more dynamism
+        if (Math.random() > 0.7) {
+          setSelectedYear(prev => {
+            const availableYears = Array.from(new Set(allPrefectures.map((p) => p.year))).sort((a, b) => a - b);
+            if (availableYears.length === 0) return prev;
+            const nextIdx = (availableYears.indexOf(prev) + 1) % availableYears.length;
+            return availableYears[nextIdx];
+          });
+        }
+      }, 4000);
+    }
+    return () => clearInterval(interval);
+  }, [isPlaying, setCurrentMetric, setSelectedYear, allPrefectures]);
 
   const [mapFlash, setMapFlash] = useState<string>('');
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -264,6 +322,7 @@ function App() {
     if (gachaRunning) return;
     setGachaRunning(true);
     setGachaResult(null);
+    playGachaSound();
     triggerUnlockCheck({ gachaCount: userStats.gachaCount + 1 });
 
     const prefList = currentYearData;
@@ -284,6 +343,7 @@ function App() {
         setGachaDisplayPref(finalPref.prefName);
         const catchphrase = generatePrefectureCatchphrase(finalPref);
         
+        playGachaWinSound();
         setGachaResult({
           pref: finalPref,
           catchphrase: catchphrase
@@ -370,7 +430,7 @@ function App() {
 
   const availableYears = Array.from(new Set(allPrefectures.map((p) => p.year))).sort((a, b) => a - b);
 
-  if (loading) {
+  if (loading && allPrefectures.length === 0) {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center transition-colors duration-300">
         <div className="flex flex-col items-center gap-4">
@@ -469,6 +529,7 @@ function App() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => {
+              playClickSound();
               setShowGacha(true);
               setTimeout(() => {
                 handleRollGacha();
@@ -483,7 +544,10 @@ function App() {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => setShowUploader(true)}
+            onClick={() => {
+              playClickSound();
+              setShowUploader(true);
+            }}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/20 dark:hover:bg-indigo-500/30 rounded-lg border border-indigo-200 dark:border-indigo-500/50 cursor-pointer transition-all cyber-glow"
           >
             <Upload className="w-3.5 h-3.5" />
@@ -491,9 +555,29 @@ function App() {
           </motion.button>
 
           <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => {
+              playClickSound();
+              setIsPlaying(!isPlaying);
+            }}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg border cursor-pointer transition-all cyber-glow ${
+              isPlaying 
+                ? 'bg-rose-500/10 text-rose-600 border-rose-200 dark:bg-rose-500/20 dark:text-rose-400 dark:border-rose-500/50' 
+                : 'bg-emerald-500/10 text-emerald-600 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/50'
+            }`}
+          >
+            {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+            <span className="hidden sm:inline">{isPlaying ? 'デモ停止' : 'デモ再生'}</span>
+          </motion.button>
+
+          <motion.button
             whileHover={{ scale: 1.1, rotate: 15 }}
             whileTap={{ scale: 0.9 }}
-            onClick={() => setIsDarkMode(!isDarkMode)}
+            onClick={() => {
+              playClickSound();
+              setIsDarkMode(!isDarkMode);
+            }}
             className="p-2.5 rounded-lg border border-slate-200/50 dark:border-slate-800/50 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors"
             aria-label="Toggle Dark Mode"
           >
@@ -513,7 +597,10 @@ function App() {
             {/* 指標セレクター (コンパクト化) */}
             <MetricSelector
               currentMetric={currentMetric}
-              onChange={(m: MetricType) => setCurrentMetric(m)}
+              onChange={(m: MetricType) => {
+                playClickSound();
+                setCurrentMetric(m);
+              }}
             />
 
             {/* ランキングテーブル (左カラムに適合) */}
@@ -538,6 +625,7 @@ function App() {
                   onSelectPrefecture={handleSelectPrefecture}
                   selectedYear={selectedYear}
                   flashEffect={mapFlash}
+                  isRetroMode={isRetroMode}
                 />
             </div>
 
@@ -563,7 +651,10 @@ function App() {
               <TimelineControl
                 years={availableYears}
                 selectedYear={selectedYear}
-                onYearChange={setSelectedYear}
+                onYearChange={(y) => {
+                  playClickSound();
+                  setSelectedYear(y);
+                }}
                 isPlaying={isPlaying}
                 onPlayingChange={setIsPlaying}
               />
@@ -586,6 +677,7 @@ function App() {
                 activeTab={detailPanelActiveTab}
                 onActiveTabChange={setDetailPanelActiveTab}
                 unlockedAchievements={unlockedAchievements}
+                isRetroMode={isRetroMode}
               />
             </div>
 
@@ -636,16 +728,35 @@ function App() {
             </div>
             
             <div className="p-5 overflow-y-auto">
-              <CsvUploader
-                onDataLoaded={(data) => {
-                  handleDataLoaded(data);
-                  setShowUploader(false);
-                }}
-              />
+              <Suspense fallback={<div className="p-8 text-center text-slate-500">読み込み中...</div>}>
+                <CsvUploader
+                  onDataLoaded={(data) => {
+                    handleDataLoaded(data);
+                    setShowUploader(false);
+                  }}
+                />
+              </Suspense>
             </div>
           </motion.div>
         </motion.div>
       )}
+      </AnimatePresence>
+
+      {/* バックグラウンド計算中のトースト */}
+      <AnimatePresence>
+        {loading && allPrefectures.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="fixed bottom-6 right-6 z-[9999] pointer-events-none"
+          >
+            <div className="bg-slate-900/90 backdrop-blur shadow-2xl border border-white/10 text-white px-4 py-2.5 rounded-full flex items-center gap-2.5">
+              <div className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+              <span className="text-xs font-bold tracking-wider">RECALCULATING...</span>
+            </div>
+          </motion.div>
+        )}
       </AnimatePresence>
 
       {/* 理想郷ガチャモーダル */}
@@ -804,10 +915,27 @@ function App() {
         </div>
       )}
 
-      {/* フッター */}
-      <footer className="border-t border-slate-200/50 dark:border-slate-800/50 py-2 text-center text-[10px] text-slate-400 dark:text-slate-600 shrink-0">
-        <p>&copy; {new Date().getFullYear()} FCTX Japan Utopia Finder. All rights reserved.</p>
-      </footer>
+      {/* フッター / NewsTicker */}
+      <div className="shrink-0 mt-auto relative z-50">
+        {isRetroMode && (
+          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-4 w-[90%] max-w-2xl bg-black border-4 border-white p-4 rounded-none shadow-[4px_4px_0_#fff]">
+            <div className="text-white font-['DotGothic16'] text-lg animate-[pulse_2s_infinite]">
+              ▼ FCTX レトロモード に とつにゅうした！<br/>
+              ▼ コナミコマンド を みつけるとは なかなか やるな！<br/>
+              ▼ これで きみも りっぱな ゆうしゃだ。
+            </div>
+            <button 
+              onClick={() => setIsRetroMode(false)}
+              className="mt-4 bg-white text-black px-4 py-1 text-sm font-bold border-2 border-transparent hover:border-white hover:bg-black hover:text-white transition-colors cursor-pointer"
+            >
+              ＞ にげる
+            </button>
+          </div>
+        )}
+        <NewsTicker allPrefectures={allPrefectures} selectedYear={selectedYear} />
+      </div>
+
+      <WeatherEffects currentMetric={currentMetric} />
     </div>
   );
 }

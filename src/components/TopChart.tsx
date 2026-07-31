@@ -16,7 +16,7 @@ interface TopChartProps {
   currentMetric: MetricType;
 }
 
-export const TopChart: React.FC<TopChartProps> = ({ data, currentMetric }) => {
+export const TopChart: React.FC<TopChartProps> = React.memo(({ data, currentMetric }) => {
   const config = METRIC_CONFIGS[currentMetric];
 
   // 指標の値が存在するデータのみを抽出し、降順でソートして上位5つを取得
@@ -119,4 +119,4 @@ export const TopChart: React.FC<TopChartProps> = ({ data, currentMetric }) => {
       )}
     </div>
   );
-};
+});
