@@ -1,8 +1,8 @@
-import React, { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet';
 import type { Layer, PathOptions, Polygon, GeoJSON as LGeoJSON } from 'leaflet';
 import type { Feature, FeatureCollection, Geometry } from 'geojson';
-import type { PrefectureData, MetricType } from '../types/prefecture';
+import type { MetricConfig, MetricType, PrefectureData } from '../types/prefecture';
 import { METRIC_CONFIGS } from '../constants/metrics';
 import { getColorForScore } from '../utils/colorScale';
 import { escapeHtml, formatMetricValue } from '../utils/format';
@@ -42,6 +42,9 @@ const loadGeoJson = (): Promise<PrefFeatureCollection> => {
   });
   return geoJsonPromise;
 };
+
+const scoreOf = (prefData: PrefectureData | undefined, config: MetricConfig): number | undefined =>
+  prefData && config.scoreKey ? (prefData[config.scoreKey] as number | undefined) : undefined;
 
 const MAP_BUTTON_CLASS =
   'w-7 h-7 rounded-lg bg-white/95 dark:bg-slate-900/95 border border-slate-200/50 dark:border-slate-800/50 shadow flex items-center justify-center font-black text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors';
@@ -103,28 +106,29 @@ export const JapanMap: React.FC<JapanMapProps> = React.memo(({
   const dataByCode = useMemo(() => new Map(data.map((d) => [d.prefCode, d])), [data]);
   const selectedSet = useMemo(() => new Set(selectedPrefCodes), [selectedPrefCodes]);
 
-  const scoreOf = (prefData: PrefectureData | undefined): number | undefined =>
-    prefData && config.scoreKey ? (prefData[config.scoreKey] as number | undefined) : undefined;
+  const getFeatureStyle = useCallback(
+    (feature?: PrefFeature): PathOptions => {
+      const prefCode = feature?.properties.id ?? -1;
+      const isSelected = selectedSet.has(prefCode);
+      return {
+        fillColor: getColorForScore(scoreOf(dataByCode.get(prefCode), config)),
+        fillOpacity: isSelected ? 0.85 : 0.7,
+        color: isSelected ? '#4f46e5' : '#94a3b8', // 選択されている都道府県は太いインディゴで囲む
+        weight: isSelected ? 2.5 : 0.8,
+        dashArray: isSelected ? '' : '3',
+      };
+    },
+    [dataByCode, selectedSet, config],
+  );
 
-  const getFeatureStyle = (feature?: PrefFeature): PathOptions => {
-    const prefCode = feature?.properties.id ?? -1;
-    const isSelected = selectedSet.has(prefCode);
-    return {
-      fillColor: getColorForScore(scoreOf(dataByCode.get(prefCode))),
-      fillOpacity: isSelected ? 0.85 : 0.7,
-      color: isSelected ? '#4f46e5' : '#94a3b8', // 選択されている都道府県は太いインディゴで囲む
-      weight: isSelected ? 2.5 : 0.8,
-      dashArray: isSelected ? '' : '3',
-    };
-  };
+  const generateTooltipContent = useCallback(
+    (feature: PrefFeature): string => {
+      const prefData = dataByCode.get(feature.properties.id);
+      const prefName = prefData?.prefName || feature.properties.nam_ja || feature.properties.nam || '不明';
+      const value = prefData?.[currentMetric];
+      const score = scoreOf(prefData, config);
 
-  const generateTooltipContent = (feature: PrefFeature): string => {
-    const prefData = dataByCode.get(feature.properties.id);
-    const prefName = prefData?.prefName || feature.properties.nam_ja || feature.properties.nam || '不明';
-    const value = prefData?.[currentMetric];
-    const score = scoreOf(prefData);
-
-    return `
+      return `
       <div class="p-1 text-slate-800 dark:text-slate-800 font-sans">
         <strong class="text-sm font-bold block mb-1 border-b pb-0.5 border-slate-200">${escapeHtml(prefName)}</strong>
         <span class="text-xs text-slate-500 block">${escapeHtml(config.label)}</span>
@@ -136,7 +140,9 @@ export const JapanMap: React.FC<JapanMapProps> = React.memo(({
         }
       </div>
     `;
-  };
+    },
+    [dataByCode, currentMetric, config],
+  );
 
   // Leaflet のイベントハンドラは初回バインド時のクロージャを保持し続ける。
   // 最新の props から計算した関数を ref 経由で参照し、「マウスアウトで古い指標の色に戻る」問題を防ぐ。
@@ -145,18 +151,18 @@ export const JapanMap: React.FC<JapanMapProps> = React.memo(({
     latestRef.current = { getFeatureStyle, selectedSet, onSelectPrefecture };
   });
 
-  // レイヤーを作り直さず、スタイルとツールチップだけを差し替える (47 ポリゴンの再生成を回避)
-  const refreshLayers = useEffectEvent(() => {
+  // レイヤーを作り直さず、スタイルとツールチップだけを差し替える (47 ポリゴンの再生成を回避)。
+  // 注: ここで useEffectEvent を使ってはいけない。React 19.2 の本番ビルドでは React.memo 化された
+  // コンポーネント内の effect event が初回レンダーのクロージャのまま更新されず、古い指標の色で上書きされる。
+  // (E2E テスト「指標の切り替えで地図の配色と URL が更新される」で検出)
+  useEffect(() => {
     geoJsonLayerRef.current?.eachLayer((layer: Layer) => {
       const path = layer as PrefLayer;
       if (!path.feature) return;
       path.setStyle(getFeatureStyle(path.feature));
       if (path.getTooltip()) path.setTooltipContent(generateTooltipContent(path.feature));
     });
-  });
-  useEffect(() => {
-    refreshLayers();
-  }, [dataByCode, currentMetric, selectedSet, geoJsonData]);
+  }, [getFeatureStyle, generateTooltipContent, geoJsonData]);
 
   const onEachFeature = (feature: PrefFeature, layer: Layer) => {
     const path = layer as PrefLayer;
