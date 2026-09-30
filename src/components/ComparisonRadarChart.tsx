@@ -11,6 +11,8 @@ import {
 } from 'recharts';
 import type { PrefectureData } from '../types/prefecture';
 
+import { CHART_TOOLTIP_PROPS } from '../constants/chartTheme';
+
 interface ComparisonRadarChartProps {
   prefecture1: PrefectureData;
   prefecture2: PrefectureData;
@@ -74,16 +76,7 @@ export const ComparisonRadarChart: React.FC<ComparisonRadarChartProps> = ({
               domain={[0, 100]} 
               tick={{ fill: '#94a3b8', fontSize: 10 }}
             />
-            <Tooltip 
-              contentStyle={{ 
-                backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                borderRadius: '8px',
-                border: 'none',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                fontSize: '12px',
-                color: '#1e293b'
-              }}
-            />
+            <Tooltip {...CHART_TOOLTIP_PROPS} cursor={false} />
             <Legend 
               wrapperStyle={{ fontSize: '12px', fontWeight: 'bold' }}
               iconType="circle"

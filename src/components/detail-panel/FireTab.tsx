@@ -5,6 +5,7 @@ import type { PrefectureData } from '../../types/prefecture';
 import { simulateFire } from '../../utils/fireSimulation';
 import { confetti } from '../../utils/confetti';
 import { formatManAxisLabel, formatManYen } from './logic';
+import { CHART_TOOLTIP_PROPS } from '../../constants/chartTheme';
 
 /** シミュレーション前提（年齢・世帯年収[万円]・現在の資産[万円]・目標リタイア資産[万円]） */
 const FIRE_START_AGE = 30;
@@ -76,8 +77,7 @@ export const FireTab: React.FC<FireTabProps> = ({ prefecture, onDecide }) => {
                   tickFormatter={(v) => formatManAxisLabel(Number(v))}
                 />
                 <Tooltip
-                  contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '11px' }}
-                  itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
+                  {...CHART_TOOLTIP_PROPS}
                   formatter={(value, name) => [formatManYen(Number(value)), name]}
                 />
                 <Area type="monotone" dataKey="tokyoAssets" name="東京での資産" stroke="#94a3b8" fillOpacity={1} fill="url(#colorTokyo)" />

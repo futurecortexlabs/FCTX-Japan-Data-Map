@@ -10,6 +10,7 @@ import {
 } from 'recharts';
 import type { PrefectureData, MetricType } from '../types/prefecture';
 import { METRIC_CONFIGS } from '../constants/metrics';
+import { CHART_TOOLTIP_PROPS } from '../constants/chartTheme';
 
 interface TopChartProps {
   data: PrefectureData[];
@@ -91,14 +92,7 @@ export const TopChart: React.FC<TopChartProps> = React.memo(({ data, currentMetr
               />
               <Tooltip
                 formatter={(value) => [formatValue(Number(value)), config.label]}
-                contentStyle={{
-                  backgroundColor: 'rgba(15, 23, 42, 0.9)',
-                  border: 'none',
-                  borderRadius: '8px',
-                  color: '#fff',
-                  fontSize: '12px',
-                  boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-                }}
+                {...CHART_TOOLTIP_PROPS}
               />
               <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={16}>
                 {chartData.map((_, index) => {

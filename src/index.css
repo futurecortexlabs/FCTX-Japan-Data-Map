@@ -1,6 +1,13 @@
 @import "tailwindcss";
 @import "leaflet/dist/leaflet.css";
 
+/*
+ * dark: バリアントをアプリのテーマ切替 (<html class="dark">) に連動させる。
+ * Tailwind v4 の既定は OS の prefers-color-scheme のため、未指定だと画面内のトグルが効かず、
+ * OS 設定とアプリ設定が食い違うと背景と文字の配色が別テーマになっていた。
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* Leaflet 地図のベーススタイル */
 .leaflet-container {
   width: 100%;
