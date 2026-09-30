@@ -49,7 +49,7 @@ jobs:
         run: |
           { echo '### Bundle'; echo '```'; du -h dist/assets/* | sort -h; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
 
-      - uses: actions/upload-pages-artifact@v4
+      - uses: actions/upload-pages-artifact@v5
         if: github.event_name != 'pull_request'
         with:
           path: ./dist
