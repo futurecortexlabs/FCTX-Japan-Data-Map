@@ -106,7 +106,7 @@ export const RankingTable: React.FC<RankingTableProps> = ({
 
       {/* スリムなリストコンテナ */}
       <div className="flex-1 overflow-y-auto pr-1">
-        <table className="w-full text-left border-collapse">
+        <table role="grid" className="w-full text-left border-collapse" aria-label="都道府県ランキング" aria-multiselectable="true">
           <thead>
             <tr className="border-b border-slate-100 dark:border-slate-800 text-[10px] text-slate-400 font-bold uppercase">
               <th className="py-2 px-1 w-10 text-center">順位</th>
@@ -133,7 +133,16 @@ export const RankingTable: React.FC<RankingTableProps> = ({
                   transition={{ duration: 0.2, delay: index < 20 ? index * 0.03 : 0 }}
                   key={pref.prefCode}
                   onClick={() => onSelectPrefecture(pref.prefCode)}
-                  className={`border-b border-slate-100/30 dark:border-slate-800/20 text-xs transition-all duration-200 cursor-pointer ${
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      onSelectPrefecture(pref.prefCode);
+                    }
+                  }}
+                  tabIndex={0}
+                  aria-selected={isSelected}
+                  data-pref-code={pref.prefCode}
+                  className={`border-b border-slate-100/30 dark:border-slate-800/20 text-xs transition-all duration-200 cursor-pointer focus-visible:outline-2 focus-visible:outline-indigo-500 ${
                     isSelected
                       ? 'bg-indigo-50/50 dark:bg-indigo-950/20 font-black text-indigo-600 dark:text-indigo-400'
                       : 'hover:bg-slate-50 dark:hover:bg-slate-800/20 text-slate-600 dark:text-slate-300'

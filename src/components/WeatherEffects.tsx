@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence, type TargetAndTransition } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion, type TargetAndTransition } from 'framer-motion';
 import { type MetricType } from '../types/prefecture';
 
 interface WeatherEffectsProps {
@@ -148,7 +148,9 @@ const ParticleField: React.FC<ParticleFieldProps> = ({ effectType }) => {
 
 export const WeatherEffects: React.FC<WeatherEffectsProps> = ({ currentMetric }) => {
   const effectType = metricToEffectMap[currentMetric] || 'none';
-  if (effectType === 'none') return null;
+  // 「視差効果を減らす」設定のユーザーには全画面パーティクルを表示しない
+  const reduceMotion = useReducedMotion();
+  if (effectType === 'none' || reduceMotion) return null;
 
   // key で種別ごとに再マウントし、パーティクルを作り直す
   return <ParticleField key={effectType} effectType={effectType} />;

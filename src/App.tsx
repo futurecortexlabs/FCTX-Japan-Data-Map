@@ -18,6 +18,7 @@ import { TimelineControl } from './components/TimelineControl';
 import { NewsTicker } from './components/NewsTicker';
 import { WeatherEffects } from './components/WeatherEffects';
 import { ParallaxOrbs } from './components/ParallaxOrbs';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 import { useDarkMode } from './hooks/useDarkMode';
 import { useUrlState } from './hooks/useUrlState';
@@ -28,6 +29,7 @@ import { usePersistentState } from './hooks/usePersistentState';
 import { useInterval } from './hooks/useInterval';
 
 import { playScanSound, playClickSound, playRetroUnlockSound, startRetroBGM, stopRetroBGM } from './utils/audio';
+import { loadRetroFont } from './utils/retroFont';
 import { estimateMonthlyCost, isColdRegion, isUrbanRegion, TROPICAL_PREF_CODE } from './utils/region';
 
 // 初期表示に不要な重いコンポーネントは遅延ロードする
@@ -145,6 +147,7 @@ function App() {
       setIsRetroMode(enabled);
       document.body.classList.toggle('retro-mode', enabled);
       if (enabled) {
+        loadRetroFont();
         playRetroUnlockSound();
         startRetroBGM();
         unlock('retro_gamer');
@@ -358,27 +361,31 @@ function App() {
               }}
             />
             <div className="flex-1 min-h-[400px] lg:min-h-0 flex flex-col lg:overflow-hidden">
-              <RankingTable
-                data={currentYearData}
-                currentMetric={currentMetric}
-                selectedPrefCodes={selectedPrefCodes}
-                onSelectPrefecture={handleSelectPrefecture}
-              />
+              <ErrorBoundary label="ランキング" resetKey={currentMetric}>
+                <RankingTable
+                  data={currentYearData}
+                  currentMetric={currentMetric}
+                  selectedPrefCodes={selectedPrefCodes}
+                  onSelectPrefecture={handleSelectPrefecture}
+                />
+              </ErrorBoundary>
             </div>
           </div>
 
           {/* 中央カラム: メイン可視化 */}
           <div className="col-span-12 lg:col-span-6 flex flex-col gap-4 lg:h-full lg:min-h-0 lg:overflow-hidden">
             <div className="flex-1 min-h-[500px] lg:min-h-0 flex flex-col lg:overflow-hidden">
-              <JapanMap
-                data={currentYearData}
-                currentMetric={currentMetric}
-                selectedPrefCodes={selectedPrefCodes}
-                onSelectPrefecture={handleSelectPrefecture}
-                selectedYear={selectedYear}
-                flashEffect={flashEffect}
-                isRetroMode={isRetroMode}
-              />
+              <ErrorBoundary label="日本地図" resetKey={currentMetric}>
+                <JapanMap
+                  data={currentYearData}
+                  currentMetric={currentMetric}
+                  selectedPrefCodes={selectedPrefCodes}
+                  onSelectPrefecture={handleSelectPrefecture}
+                  selectedYear={selectedYear}
+                  flashEffect={flashEffect}
+                  isRetroMode={isRetroMode}
+                />
+              </ErrorBoundary>
             </div>
 
             {/* 歴史イベント解説カード */}
@@ -413,23 +420,27 @@ function App() {
           {/* 右カラム: 詳細分析・設定 */}
           <div className="col-span-12 lg:col-span-3 flex flex-col gap-4 lg:h-full lg:min-h-0 lg:overflow-hidden">
             <div className="lg:h-[450px] min-h-[450px] flex flex-col lg:overflow-hidden">
-              <PrefectureDetailPanel
-                prefectures={selectedPrefectures}
-                weights={weights}
-                onWeightsChange={handleWeightsChange}
-                allPrefectures={allPrefectures}
-                onSelectPrefecture={handleSelectPrefectureSingle}
-                keepList={keepList}
-                onToggleKeep={handleToggleKeep}
-                currentMetric={currentMetric}
-                activeTab={detailPanelActiveTab}
-                onActiveTabChange={setDetailPanelActiveTab}
-                unlockedAchievements={achievements.unlocked}
-                isRetroMode={isRetroMode}
-              />
+              <ErrorBoundary label="詳細パネル" resetKey={selectedPrefCodes}>
+                <PrefectureDetailPanel
+                  prefectures={selectedPrefectures}
+                  weights={weights}
+                  onWeightsChange={handleWeightsChange}
+                  allPrefectures={allPrefectures}
+                  onSelectPrefecture={handleSelectPrefectureSingle}
+                  keepList={keepList}
+                  onToggleKeep={handleToggleKeep}
+                  currentMetric={currentMetric}
+                  activeTab={detailPanelActiveTab}
+                  onActiveTabChange={setDetailPanelActiveTab}
+                  unlockedAchievements={achievements.unlocked}
+                  isRetroMode={isRetroMode}
+                />
+              </ErrorBoundary>
             </div>
             <div className="flex-1 min-h-[300px] lg:min-h-0 flex flex-col lg:overflow-hidden">
-              <TopChart data={currentYearData} currentMetric={currentMetric} />
+              <ErrorBoundary label="上位5都道府県チャート" resetKey={currentMetric}>
+                <TopChart data={currentYearData} currentMetric={currentMetric} />
+              </ErrorBoundary>
             </div>
           </div>
         </div>

@@ -62,7 +62,7 @@ export const ComparisonRadarChart: React.FC<ComparisonRadarChartProps> = ({
       </div>
       
       <div className="flex-1 min-h-[250px] w-full">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 320, height: 250 }}>
           <RadarChart cx="50%" cy="50%" outerRadius="70%" data={data}>
             <PolarGrid stroke="#cbd5e1" />
             <PolarAngleAxis 

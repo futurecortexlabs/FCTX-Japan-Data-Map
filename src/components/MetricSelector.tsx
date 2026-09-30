@@ -50,8 +50,10 @@ export const MetricSelector: React.FC<MetricSelectorProps> = ({
         <div className="flex border-b border-slate-100 dark:border-slate-800/80 pb-0.5 gap-3.5 w-full overflow-x-auto">
           {categories.map((cat) => (
             <button
+              type="button"
               key={cat.key}
               onClick={() => setActiveCategory(cat.key)}
+              aria-pressed={activeCategory === cat.key}
               className={`pb-1.5 text-xs font-black transition-all duration-300 relative cursor-pointer whitespace-nowrap ${
                 activeCategory === cat.key
                   ? 'text-indigo-600 dark:text-indigo-400'
@@ -78,8 +80,10 @@ export const MetricSelector: React.FC<MetricSelectorProps> = ({
 
             return (
               <button
+                type="button"
                 key={item.key}
                 onClick={() => onChange(item.key)}
+                aria-pressed={currentMetric === item.key}
                 className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg border text-xs font-bold transition-all duration-300 cursor-pointer ${
                   isActive
                     ? `${item.activeBg} text-indigo-700 dark:text-indigo-400 shadow-sm border-indigo-200/50 dark:border-indigo-800/50`

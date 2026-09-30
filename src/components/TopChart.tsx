@@ -74,7 +74,7 @@ export const TopChart: React.FC<TopChartProps> = React.memo(({ data, currentMetr
         </div>
       ) : (
         <div className="flex-1 min-h-[220px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 320, height: 220 }}>
             <BarChart
               data={chartData}
               layout="vertical"
