@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Trophy, Search } from 'lucide-react';
 import { type PrefectureData, type MetricType } from '../types/prefecture';
-import { METRIC_CONFIGS } from './MetricSelector';
+import { METRIC_CONFIGS } from '../constants/metrics';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface RankingTableProps {

@@ -125,7 +125,7 @@ export function processPrefectureData(
         ? Math.round((100 - rawPollenScore) * 100) / 100
         : undefined;
 
-      let updatedPref: PrefectureData = {
+      const updatedPref: PrefectureData = {
         ...pref,
         landPriceScore: invertedLandPriceScore,
         populationScore: populationScores[idx],

@@ -9,7 +9,7 @@ import {
   Cell,
 } from 'recharts';
 import type { PrefectureData, MetricType } from '../types/prefecture';
-import { METRIC_CONFIGS } from './MetricSelector';
+import { METRIC_CONFIGS } from '../constants/metrics';
 
 interface TopChartProps {
   data: PrefectureData[];
@@ -90,7 +90,7 @@ export const TopChart: React.FC<TopChartProps> = React.memo(({ data, currentMetr
                 width={60}
               />
               <Tooltip
-                formatter={(value: any) => [formatValue(Number(value)), config.label]}
+                formatter={(value) => [formatValue(Number(value)), config.label]}
                 contentStyle={{
                   backgroundColor: 'rgba(15, 23, 42, 0.9)',
                   border: 'none',

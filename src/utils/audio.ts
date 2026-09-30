@@ -4,7 +4,7 @@ let audioCtx: AudioContext | null = null;
 const getContext = () => {
   if (typeof window === 'undefined') return null;
   if (!audioCtx) {
-    audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    audioCtx = new (window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext!)();
   }
   if (audioCtx.state === 'suspended') {
     audioCtx.resume();
@@ -89,7 +89,7 @@ export const playGachaSound = () => {
   
   osc.type = 'square';
   // Rapid frequency changes
-  let now = ctx.currentTime;
+  const now = ctx.currentTime;
   osc.frequency.setValueAtTime(300, now);
   for (let i = 1; i <= 10; i++) {
     osc.frequency.setValueAtTime(300 + Math.random() * 500, now + i * 0.05);

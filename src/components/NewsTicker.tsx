@@ -1,5 +1,26 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { type PrefectureData } from '../types/prefecture';
+
+/** 32bit シードから再現性のある疑似乱数列を生成する (mulberry32) */
+const createSeededRandom = (seed: number) => {
+  let t = seed >>> 0;
+  return () => {
+    t = (t + 0x6d2b79f5) >>> 0;
+    let r = Math.imul(t ^ (t >>> 15), 1 | t);
+    r = (r + Math.imul(r ^ (r >>> 7), 61 | r)) ^ r;
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+  };
+};
+
+/** Fisher-Yates シャッフル（元配列は変更しない） */
+const shuffle = <T,>(items: readonly T[], random: () => number): T[] => {
+  const result = [...items];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+};
 
 interface NewsTickerProps {
   allPrefectures: PrefectureData[];
@@ -7,6 +28,9 @@ interface NewsTickerProps {
 }
 
 export const NewsTicker: React.FC<NewsTickerProps> = ({ allPrefectures, selectedYear }) => {
+  // マウント時に一度だけ乱数シードを決め、レンダーごとの並び順は決定的にする
+  const [shuffleSeed] = useState(() => Math.floor(Math.random() * 2 ** 32));
+
   const newsItems = useMemo(() => {
     if (!allPrefectures || allPrefectures.length === 0) return ['データを読み込んでいます...'];
 
@@ -32,8 +56,8 @@ export const NewsTicker: React.FC<NewsTickerProps> = ({ allPrefectures, selected
     items.push('【Utopia Finder】日本のどこかに、あなただけの理想郷が必ずあります。データがそれを証明しています。');
 
     // Shuffle
-    return items.sort(() => Math.random() - 0.5);
-  }, [allPrefectures, selectedYear]);
+    return shuffle(items, createSeededRandom(shuffleSeed ^ selectedYear));
+  }, [allPrefectures, selectedYear, shuffleSeed]);
 
   return (
     <div className="w-full bg-slate-900/95 dark:bg-black/90 border-t border-indigo-500/30 overflow-hidden flex items-center relative z-[6000] h-8 shadow-[0_-5px_15px_rgba(0,0,0,0.3)]">

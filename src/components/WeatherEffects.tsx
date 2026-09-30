@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState } from 'react';
+import { motion, AnimatePresence, type TargetAndTransition } from 'framer-motion';
 import { type MetricType } from '../types/prefecture';
 
 interface WeatherEffectsProps {
@@ -23,7 +23,15 @@ const metricToEffectMap: Record<MetricType, EffectType> = {
   listedCompanies: 'none'
 };
 
-const effectConfig: Record<EffectType, { emojis: string[], count: number, direction: 'down' | 'up' | 'drift', minSize: number, maxSize: number }> = {
+interface EffectConfig {
+  emojis: string[];
+  count: number;
+  direction: 'down' | 'up' | 'drift';
+  minSize: number;
+  maxSize: number;
+}
+
+const effectConfig: Record<EffectType, EffectConfig> = {
   sakura: { emojis: ['🌸', '💮', '🌸', '✨'], count: 35, direction: 'down', minSize: 10, maxSize: 25 },
   money: { emojis: ['💴', '💸', '💰', '💴'], count: 25, direction: 'down', minSize: 20, maxSize: 35 },
   pollen: { emojis: ['🤧', '🌼', '😷', '🟡'], count: 40, direction: 'drift', minSize: 10, maxSize: 20 },
@@ -35,60 +43,82 @@ const effectConfig: Record<EffectType, { emojis: string[], count: number, direct
   none: { emojis: [], count: 0, direction: 'down', minSize: 0, maxSize: 0 }
 };
 
-export const WeatherEffects: React.FC<WeatherEffectsProps> = ({ currentMetric }) => {
-  const [particles, setParticles] = useState<any[]>([]);
-  const effectType = metricToEffectMap[currentMetric] || 'none';
-  const config = effectConfig[effectType];
+interface Particle {
+  id: string;
+  emoji: string;
+  size: number;
+  startX: number;
+  /** drift（横流れ）用の開始高さ (vh)。レンダーごとに変わらないよう生成時に確定させる */
+  startY: number;
+  delay: number;
+  duration: number;
+  swayAmount: number;
+}
 
-  useEffect(() => {
-    if (config.count === 0) {
-      setParticles([]);
-      return;
+const createParticles = (effectType: EffectType, config: EffectConfig): Particle[] =>
+  Array.from({ length: config.count }, (_, i) => ({
+    id: `${effectType}-${i}`,
+    emoji: config.emojis[Math.floor(Math.random() * config.emojis.length)],
+    size: Math.random() * (config.maxSize - config.minSize) + config.minSize,
+    startX: Math.random() * 100,
+    startY: Math.random() * 100,
+    delay: Math.random() * 5,
+    duration: Math.random() * 5 + 5, // 5s to 10s
+    swayAmount: Math.random() * 20 - 10,
+  }));
+
+const getParticleMotion = (
+  p: Particle,
+  direction: EffectConfig['direction'],
+): { initial: TargetAndTransition; animate: TargetAndTransition } => {
+  const swayX = [`${p.startX}vw`, `${p.startX + p.swayAmount}vw`, `${p.startX - p.swayAmount}vw`, `${p.startX}vw`];
+
+  switch (direction) {
+    case 'down':
+      return {
+        initial: { opacity: 0, x: `${p.startX}vw`, y: '-10vh', rotate: 0 },
+        animate: { opacity: [0, 1, 1, 0], y: '110vh', x: swayX, rotate: [0, 90, 180, 360] },
+      };
+    case 'up':
+      return {
+        initial: { opacity: 0, x: `${p.startX}vw`, y: '110vh', rotate: 0 },
+        animate: { opacity: [0, 1, 1, 0], y: '-10vh', x: swayX, rotate: [0, -90, -180, -360] },
+      };
+    case 'drift': {
+      // Pollen drifting horizontally
+      const startY = `${p.startY}vh`;
+      return {
+        initial: { opacity: 0, x: '-10vw', y: startY },
+        animate: {
+          opacity: [0, 1, 1, 0],
+          x: '110vw',
+          y: [startY, `calc(${startY} + ${p.swayAmount}vh)`, startY],
+          rotate: [0, 45, 90],
+        },
+      };
     }
+  }
+};
 
-    const newParticles = Array.from({ length: config.count }).map((_, i) => {
-      const emoji = config.emojis[Math.floor(Math.random() * config.emojis.length)];
-      const size = Math.random() * (config.maxSize - config.minSize) + config.minSize;
-      const startX = Math.random() * 100;
-      const delay = Math.random() * 5;
-      const duration = Math.random() * 5 + 5; // 5s to 10s
-      const swayAmount = Math.random() * 20 - 10;
-      
-      return { id: `${effectType}-${i}`, emoji, size, startX, delay, duration, swayAmount };
-    });
+interface ParticleFieldProps {
+  effectType: Exclude<EffectType, 'none'>;
+}
 
-    setParticles(newParticles);
-  }, [effectType, config]);
+/**
+ * パーティクルはマウント時に一度だけ生成する。
+ * エフェクト種別が変わると親が key を変えて再マウントするため、effect 内での再生成は不要。
+ */
+const ParticleField: React.FC<ParticleFieldProps> = ({ effectType }) => {
+  const config = effectConfig[effectType];
+  const [particles] = useState(() => createParticles(effectType, config));
 
-  if (effectType === 'none' || particles.length === 0) return null;
+  if (particles.length === 0) return null;
 
   return (
     <div className="fixed inset-0 pointer-events-none z-[4500] overflow-hidden">
       <AnimatePresence>
         {particles.map((p) => {
-          let initial: any = { opacity: 0, x: `${p.startX}vw` };
-          let animate: any = { opacity: [0, 1, 1, 0] };
-          
-          if (config.direction === 'down') {
-            initial.y = '-10vh';
-            initial.rotate = 0;
-            animate.y = '110vh';
-            animate.x = [`${p.startX}vw`, `${p.startX + p.swayAmount}vw`, `${p.startX - p.swayAmount}vw`, `${p.startX}vw`];
-            animate.rotate = [0, 90, 180, 360];
-          } else if (config.direction === 'up') {
-            initial.y = '110vh';
-            initial.rotate = 0;
-            animate.y = '-10vh';
-            animate.x = [`${p.startX}vw`, `${p.startX + p.swayAmount}vw`, `${p.startX - p.swayAmount}vw`, `${p.startX}vw`];
-            animate.rotate = [0, -90, -180, -360];
-          } else if (config.direction === 'drift') {
-            // Pollen drifting horizontally
-            initial.x = '-10vw';
-            initial.y = `${Math.random() * 100}vh`;
-            animate.x = '110vw';
-            animate.y = [`${initial.y}`, `calc(${initial.y} + ${p.swayAmount}vh)`, `${initial.y}`];
-            animate.rotate = [0, 45, 90];
-          }
+          const { initial, animate } = getParticleMotion(p, config.direction);
 
           return (
             <motion.div
@@ -114,4 +144,12 @@ export const WeatherEffects: React.FC<WeatherEffectsProps> = ({ currentMetric })
       </AnimatePresence>
     </div>
   );
+};
+
+export const WeatherEffects: React.FC<WeatherEffectsProps> = ({ currentMetric }) => {
+  const effectType = metricToEffectMap[currentMetric] || 'none';
+  if (effectType === 'none') return null;
+
+  // key で種別ごとに再マウントし、パーティクルを作り直す
+  return <ParticleField key={effectType} effectType={effectType} />;
 };

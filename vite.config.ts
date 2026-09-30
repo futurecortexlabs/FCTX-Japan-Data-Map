@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
@@ -20,5 +21,16 @@ export default defineConfig({
         }
       }
     }
-  }
+  },
+  test: {
+    include: ['src/**/*.test.ts'],
+    environment: 'node',
+    coverage: {
+      provider: 'v8',
+      include: ['src/utils/**', 'src/hooks/useUrlState.ts', 'src/constants/**'],
+      // Web Audio / Web Speech / Canvas に依存する薄いラッパーはブラウザでのみ検証する
+      exclude: ['src/utils/audio.ts', 'src/utils/speech.ts', 'src/utils/confetti.ts', 'src/**/*.test.ts'],
+      reporter: ['text', 'html'],
+    },
+  },
 })

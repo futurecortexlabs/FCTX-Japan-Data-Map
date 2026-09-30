@@ -1,9 +1,17 @@
 import { type PrefectureData } from '../types/prefecture';
 
-export function generatePrefectureCatchphrase(pref: PrefectureData): { text: string; rarity: 'SSR' | 'SR' | 'R'; advice: string } {
+export type GachaRarity = 'SSR' | 'SR' | 'R';
+
+export interface Catchphrase {
+  text: string;
+  rarity: GachaRarity;
+  advice: string;
+}
+
+export function generatePrefectureCatchphrase(pref: PrefectureData): Catchphrase {
   
   // Determine rarity
-  let rarity: 'SSR' | 'SR' | 'R' = 'R';
+  let rarity: GachaRarity = 'R';
   if (pref.prefCode === 13 || pref.prefCode === 27 || pref.prefCode === 14) {
     rarity = 'SSR'; // Big 3
   } else if (
@@ -38,8 +46,8 @@ export function generatePrefectureCatchphrase(pref: PrefectureData): { text: str
   const best = scores[0];
   const second = scores[1];
 
-  let text = '';
-  let advice = '';
+  let text: string;
+  let advice: string;
 
   if (pref.prefCode === 13) {
     text = `地価・家賃は日本一高いが、無数のカフェと最先端のキャリアが全て手に入る「究極の都会ユートピア」`;

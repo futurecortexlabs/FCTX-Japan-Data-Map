@@ -1,98 +1,14 @@
 import React, { useState } from 'react';
 import { Coins, Users, Building2, Award, Coffee, Soup, Sparkles, Sun, Flame, Activity, Wind, Heart } from 'lucide-react';
-import { type MetricType, type MetricConfig } from '../types/prefecture';
+import type { MetricType } from '../types/prefecture';
+import { METRIC_CONFIGS } from '../constants/metrics';
 
 interface MetricSelectorProps {
   currentMetric: MetricType;
   onChange: (metric: MetricType) => void;
 }
 
-export const METRIC_CONFIGS: Record<MetricType, MetricConfig> = {
-  totalScore: {
-    key: 'totalScore',
-    label: '総合スコア (移住ポテンシャル)',
-    unit: '点',
-    scoreKey: 'totalScore',
-    category: 'basic',
-  },
-  landPrice: {
-    key: 'landPrice',
-    label: '住居費の安さ (平均地価)',
-    unit: '円/㎡',
-    scoreKey: 'landPriceScore',
-    category: 'basic',
-  },
-  population: {
-    key: 'population',
-    label: '生活利便性 (人口規模)',
-    unit: '人',
-    scoreKey: 'populationScore',
-    category: 'basic',
-  },
-  listedCompanies: {
-    key: 'listedCompanies',
-    label: '雇用の豊富さ (上場企業数)',
-    unit: '社',
-    scoreKey: 'listedCompanyScore',
-    category: 'basic',
-  },
-  hospitalCount: {
-    key: 'hospitalCount',
-    label: '医療機関数 (総合病院数)',
-    unit: '施設',
-    scoreKey: 'hospitalScore',
-    category: 'basic',
-  },
-  childcareScore: {
-    key: 'childcareScore',
-    label: '子育てのしやすさ (環境指数)',
-    unit: '点',
-    scoreKey: 'childcareScoreScore',
-    category: 'basic',
-  },
-  starbucksCount: {
-    key: 'starbucksCount',
-    label: 'カフェ充実度 (スタバ店舗数)',
-    unit: '店舗',
-    scoreKey: 'starbucksScore',
-    category: 'lifestyle',
-  },
-  ramenCount: {
-    key: 'ramenCount',
-    label: 'グルメ充実度 (ラーメン店舗数)',
-    unit: '店舗',
-    scoreKey: 'ramenScore',
-    category: 'lifestyle',
-  },
-  onsenCount: {
-    key: 'onsenCount',
-    label: '温泉の多さ (源泉地数)',
-    unit: '箇所',
-    scoreKey: 'onsenScore',
-    category: 'lifestyle',
-  },
-  attractiveness: {
-    key: 'attractiveness',
-    label: '観光・レジャー魅力度',
-    unit: '点',
-    scoreKey: 'attractivenessScore',
-    category: 'environment',
-  },
-  sunshineHours: {
-    key: 'sunshineHours',
-    label: '気候の快適さ (年間日照時間)',
-    unit: '時間',
-    scoreKey: 'sunshineHoursScore',
-    category: 'environment',
-  },
-  pollenLevel: {
-    key: 'pollenLevel',
-    label: '花粉の少なさ (快適レベル)',
-    unit: 'クラス',
-    scoreKey: 'pollenScore',
-    category: 'environment',
-  },
-};
+
 
 export const MetricSelector: React.FC<MetricSelectorProps> = ({
   currentMetric,

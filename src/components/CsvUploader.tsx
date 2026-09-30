@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import Papa from 'papaparse';
 import { Upload, CheckCircle2, AlertCircle, Download } from 'lucide-react';
 import type { PrefectureData } from '../types/prefecture';
+import { canonicalizeHeader, normalizeCsvRow, type CsvRow } from '../utils/csv';
 
 interface CsvUploaderProps {
   onDataLoaded: (data: PrefectureData[]) => void;
@@ -14,25 +15,6 @@ export const CsvUploader: React.FC<CsvUploaderProps> = ({
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState<string>('');
   const [fileName, setFileName] = useState<string>('');
-
-  const normalizeKey = (key: string): string => {
-    const cleaned = key.trim().toLowerCase();
-    if (['prefcode', 'code', 'id', '都道府県コード', 'コード', '都道府県id'].includes(cleaned)) return 'prefCode';
-    if (['prefname', 'name', 'prefecture', '都道府県名', '都道府県', '名前'].includes(cleaned)) return 'prefName';
-    if (['landprice', 'price', '地価', '平均地価', '公示地価'].includes(cleaned)) return 'landPrice';
-    if (['population', 'pop', '人口', '住民数', '世帯数'].includes(cleaned)) return 'population';
-    if (['listedcompanies', 'companies', 'listed_companies', 'listedcompany', 'uppercompanies', 'upper_companies', '上場企業数', '企業数', '上場会社数'].includes(cleaned)) return 'listedCompanies';
-    if (['year', '年', '年度', '西暦'].includes(cleaned)) return 'year';
-    if (['starbucks', 'starbuckscount', 'starbucks_count', 'スタバ', 'スターバックス', 'スタバ店舗数'].includes(cleaned)) return 'starbucksCount';
-    if (['ramen', 'ramencount', 'ramen_count', 'ラーメン', 'ラーメン店舗数', 'らーめん'].includes(cleaned)) return 'ramenCount';
-    if (['attractiveness', 'attractivenessscore', 'charm', '魅力度', '魅力度スコア', '魅力'].includes(cleaned)) return 'attractiveness';
-    if (['sunshinehours', 'sunshine', 'sunshine_hours', '日照時間', '年間日照時間', '日照'].includes(cleaned)) return 'sunshineHours';
-    if (['onsen', 'onsencount', 'onsen_count', '温泉', '温泉数', '温泉の数', '温泉箇所数'].includes(cleaned)) return 'onsenCount';
-    if (['hospital', 'hospitalcount', 'hospital_count', 'hospitals', '医療機関数', '病院数', '病院'].includes(cleaned)) return 'hospitalCount';
-    if (['pollen', 'pollenlevel', 'pollen_level', '花粉', '花粉量', '花粉の少なさ'].includes(cleaned)) return 'pollenLevel';
-    if (['childcare', 'childcarescore', 'childcare_score', '子育て', '子育てしやすさ', '育児'].includes(cleaned)) return 'childcareScore';
-    return key;
-  };
 
   const handleDownloadTemplate = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -51,6 +33,7 @@ export const CsvUploader: React.FC<CsvUploaderProps> = ({
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -61,10 +44,11 @@ export const CsvUploader: React.FC<CsvUploaderProps> = ({
     setStatus('idle');
     setMessage('');
 
-    Papa.parse<Record<string, any>>(file, {
+    Papa.parse<CsvRow>(file, {
       header: true,
       dynamicTyping: true,
       skipEmptyLines: true,
+      transformHeader: canonicalizeHeader,
       complete: (results) => {
         try {
           if (results.errors.length > 0) {
@@ -75,46 +59,23 @@ export const CsvUploader: React.FC<CsvUploaderProps> = ({
           }
 
           const parsedData: PrefectureData[] = results.data.map((row, index) => {
-            const normalizedRow: Record<string, any> = {};
-            Object.keys(row).forEach((key) => {
-              normalizedRow[normalizeKey(key)] = row[key];
-            });
-
-            const prefCode = Number(normalizedRow.prefCode);
-            const prefName = String(normalizedRow.prefName || '').trim();
-
-            if (isNaN(prefCode) || !prefCode) {
-               throw new Error(`行 ${index + 2}: 都道府県コードが正しくありません。`);
+            const normalized = normalizeCsvRow(row);
+            if (!normalized) {
+              throw new Error(`行 ${index + 2}: 都道府県コードが正しくありません (1〜47 の整数)。`);
             }
-            if (!prefName) {
+            if (!normalized.prefName) {
               throw new Error(`行 ${index + 2}: 都道府県名がありません。`);
             }
-
-            return {
-              year: normalizedRow.year !== undefined && normalizedRow.year !== '' && normalizedRow.year !== null ? Number(normalizedRow.year) : 2024,
-              prefCode,
-              prefName,
-              landPrice: normalizedRow.landPrice !== undefined && normalizedRow.landPrice !== '' && normalizedRow.landPrice !== null ? Number(normalizedRow.landPrice) : undefined,
-              population: normalizedRow.population !== undefined && normalizedRow.population !== '' && normalizedRow.population !== null ? Number(normalizedRow.population) : undefined,
-              listedCompanies: normalizedRow.listedCompanies !== undefined && normalizedRow.listedCompanies !== '' && normalizedRow.listedCompanies !== null ? Number(normalizedRow.listedCompanies) : undefined,
-              starbucksCount: normalizedRow.starbucksCount !== undefined && normalizedRow.starbucksCount !== '' && normalizedRow.starbucksCount !== null ? Number(normalizedRow.starbucksCount) : undefined,
-              ramenCount: normalizedRow.ramenCount !== undefined && normalizedRow.ramenCount !== '' && normalizedRow.ramenCount !== null ? Number(normalizedRow.ramenCount) : undefined,
-              attractiveness: normalizedRow.attractiveness !== undefined && normalizedRow.attractiveness !== '' && normalizedRow.attractiveness !== null ? Number(normalizedRow.attractiveness) : undefined,
-              sunshineHours: normalizedRow.sunshineHours !== undefined && normalizedRow.sunshineHours !== '' && normalizedRow.sunshineHours !== null ? Number(normalizedRow.sunshineHours) : undefined,
-              onsenCount: normalizedRow.onsenCount !== undefined && normalizedRow.onsenCount !== '' && normalizedRow.onsenCount !== null ? Number(normalizedRow.onsenCount) : undefined,
-              hospitalCount: normalizedRow.hospitalCount !== undefined && normalizedRow.hospitalCount !== '' && normalizedRow.hospitalCount !== null ? Number(normalizedRow.hospitalCount) : undefined,
-              pollenLevel: normalizedRow.pollenLevel !== undefined && normalizedRow.pollenLevel !== '' && normalizedRow.pollenLevel !== null ? Number(normalizedRow.pollenLevel) : undefined,
-              childcareScore: normalizedRow.childcareScore !== undefined && normalizedRow.childcareScore !== '' && normalizedRow.childcareScore !== null ? Number(normalizedRow.childcareScore) : undefined,
-            };
+            return normalized;
           });
 
           parsedData.sort((a, b) => a.prefCode - b.prefCode);
           onDataLoaded(parsedData);
           setStatus('success');
           setMessage(`${parsedData.length} 件のデータを正常に読み込みました。`);
-        } catch (err: any) {
+        } catch (err: unknown) {
           setStatus('error');
-          setMessage(err.message || 'CSVの解析中にエラーが発生しました。');
+          setMessage((err instanceof Error && err.message) || 'CSVの解析中にエラーが発生しました。');
         }
       },
       error: (error) => {

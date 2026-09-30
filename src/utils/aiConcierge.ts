@@ -16,9 +16,9 @@ export function generateAIConciergeAdvice(
   const isNatureSlow = ((weights.attractiveness + weights.sunshineHours + weights.pollenLevel) / totalWeight) > 0.4;
   const isFoodCulture = ((weights.starbucksCount + weights.ramenCount + weights.onsenCount) / totalWeight) > 0.4;
 
-  let diagnosis = '';
-  let steps: string[] = [];
-  let warning = '';
+  let diagnosis: string;
+  let steps: string[];
+  let warning: string;
 
   // 1. Diagnosis
   if (isFamilySenior) {

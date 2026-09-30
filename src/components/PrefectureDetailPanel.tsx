@@ -10,13 +10,14 @@ import { ACHIEVEMENTS } from '../utils/achievements';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { simulateFire } from '../utils/fireSimulation';
 import { generateNomadRoute } from '../utils/nomadPlanner';
+import { METRIC_CONFIGS } from '../constants/metrics';
 
 const UtopiaBoardingPass = lazy(() => import('./UtopiaBoardingPass').then(m => ({ default: m.UtopiaBoardingPass })));
 const VSBattleScreen = lazy(() => import('./VSBattleScreen').then(m => ({ default: m.VSBattleScreen })));
 const RetroBattleScreen = lazy(() => import('./RetroBattleScreen').then(m => ({ default: m.RetroBattleScreen })));
 
 import { speakText, stopSpeech } from '../utils/speech';
-import confetti from 'canvas-confetti';
+import { confetti } from '../utils/confetti';
 import { motion } from 'framer-motion';
 
 interface PrefectureDetailPanelProps {
@@ -33,6 +34,114 @@ interface PrefectureDetailPanelProps {
   unlockedAchievements: string[];
   isRetroMode?: boolean;
 }
+
+const calculateWeightsFromAnswers = (ans: number[]): MetricWeights => {
+  const newWeights: MetricWeights = {
+    starbucksCount: 10,
+    ramenCount: 10,
+    attractiveness: 10,
+    sunshineHours: 10,
+    onsenCount: 10,
+    hospitalCount: 10,
+    pollenLevel: 10,
+    childcareScore: 10,
+  };
+
+  // Q2: Cafe (0) vs Nature (1)
+  if (ans[1] === 0) {
+    newWeights.starbucksCount = 45;
+    newWeights.attractiveness = 20;
+  } else {
+    newWeights.onsenCount = 45;
+    newWeights.attractiveness = 20;
+  }
+
+  // Q3: Gourmet (0) vs Simple (1)
+  if (ans[2] === 0) {
+    newWeights.ramenCount = 45;
+  } else {
+    newWeights.hospitalCount = 20;
+    newWeights.childcareScore = 20;
+  }
+
+  // Q4: Climate (0) vs No Pref (1)
+  if (ans[3] === 0) {
+    newWeights.sunshineHours = 45;
+    newWeights.pollenLevel = 5;
+  } else {
+    newWeights.sunshineHours = 10;
+    newWeights.pollenLevel = 30;
+  }
+
+  return newWeights;
+};
+
+/** 配列から要素をランダムに1つ選ぶ（空配列なら undefined） */
+const pickRandom = <T,>(items: readonly T[]): T | undefined =>
+  items.length > 0 ? items[Math.floor(Math.random() * items.length)] : undefined;
+
+/** 診断クイズの回答から、上位候補（エンタメ重視のルーレット対象）を算出する */
+const rankQuizCandidates = (
+  allPrefectures: PrefectureData[],
+  tempWeights: MetricWeights,
+  ans: number[] = [],
+): PrefectureData[] => {
+  if (!allPrefectures || allPrefectures.length === 0) return [];
+  
+  // 最新年のデータのみを対象とする
+  const latestYear = Math.max(...allPrefectures.map(p => p.year));
+  const currentYearData = allPrefectures.filter(p => p.year === latestYear);
+
+  const scoredPrefectures: { pref: PrefectureData; score: number }[] = [];
+
+  for (const pref of currentYearData) {
+    const baseUrban = pref.baseUrbanScore || 50;
+    const landPrice = pref.landPriceScore || 50;
+    
+    let weightedSum = 0;
+    let weightTotal = 0;
+    
+    // Q1: コスト(0) vs 利便性(1)
+    if (ans.length > 0 && ans[0] === 0) {
+      // 固定費を抑えたい: 地価が低い（= 100 - 偏差値が高い）ほど高スコア
+      weightedSum += (100 - landPrice) * 50;
+      weightTotal += 50;
+      weightedSum += baseUrban * 10;
+      weightTotal += 10;
+    } else {
+      // 利便性重視
+      weightedSum += baseUrban * 60;
+      weightTotal += 60;
+    }
+
+    const scoreMappings = [
+      { score: pref.starbucksScore, weight: tempWeights.starbucksCount },
+      { score: pref.ramenScore, weight: tempWeights.ramenCount },
+      { score: pref.attractivenessScore, weight: tempWeights.attractiveness },
+      { score: pref.sunshineHoursScore, weight: tempWeights.sunshineHours },
+      { score: pref.onsenScore, weight: tempWeights.onsenCount },
+      { score: pref.hospitalScore, weight: tempWeights.hospitalCount },
+      { score: pref.pollenScore, weight: tempWeights.pollenLevel },
+      { score: pref.childcareScoreScore, weight: tempWeights.childcareScore },
+    ];
+
+    for (const item of scoreMappings) {
+      if (item.score !== undefined && !isNaN(item.score) && item.weight > 0) {
+        weightedSum += item.score * item.weight;
+        weightTotal += item.weight;
+      }
+    }
+
+    const totalScore = weightTotal > 0 ? (weightedSum / weightTotal) : 0;
+    scoredPrefectures.push({ pref, score: totalScore });
+  }
+
+  // スコア降順にソート
+  scoredPrefectures.sort((a, b) => b.score - a.score);
+
+  // 上位15件を候補とする（エンタメ重視のルーレット方式）
+  return scoredPrefectures.slice(0, 15).map((item) => item.pref);
+};
 
 export const PrefectureDetailPanel: React.FC<PrefectureDetailPanelProps> = ({
   prefectures,
@@ -71,7 +180,7 @@ export const PrefectureDetailPanel: React.FC<PrefectureDetailPanelProps> = ({
     } else if (prefectures.length < 3 && activeTab === 'nomad') {
       onActiveTabChange('multibase');
     }
-  }, [prefectures.length, activeTab]);
+  }, [prefectures.length, activeTab, onActiveTabChange]);
 
   // クイズ状態管理
   const [quizStep, setQuizStep] = useState<number>(0);
@@ -201,24 +310,23 @@ export const PrefectureDetailPanel: React.FC<PrefectureDetailPanelProps> = ({
     document.body.removeChild(link);
   };
 
-  const [loadingAI, setLoadingAI] = useState<boolean>(false);
-  const [aiYear, setAiYear] = useState<number>(0);
-  const [aiPrefCode, setAiPrefCode] = useState<number>(0);
+  // AI 相談の「考え中」演出: 最後に回答を表示した都道府県・年と現在の選択が異なる間はローディング扱い
+  const [aiAnswered, setAiAnswered] = useState<{ prefCode: number; year: number } | null>(null);
+  const selectedPrefCode = prefecture?.prefCode;
+  const selectedYear = prefecture?.year;
+  const loadingAI =
+    activeTab === 'ai' &&
+    selectedPrefCode !== undefined &&
+    (aiAnswered?.prefCode !== selectedPrefCode || aiAnswered?.year !== selectedYear);
 
-  // Trigger simulated typing load when AI tab is clicked or prefecture/weights change
+  // Trigger simulated typing load when AI tab is clicked or prefecture changes
   useEffect(() => {
-    if (activeTab === 'ai' && prefecture) {
-      if (aiPrefCode !== prefecture.prefCode || aiYear !== prefecture.year) {
-        setLoadingAI(true);
-        const timer = setTimeout(() => {
-          setLoadingAI(false);
-          setAiPrefCode(prefecture.prefCode);
-          setAiYear(prefecture.year);
-        }, 800);
-        return () => clearTimeout(timer);
-      }
-    }
-  }, [activeTab, prefecture?.prefCode, prefecture?.year]);
+    if (!loadingAI || selectedPrefCode === undefined || selectedYear === undefined) return;
+    const timer = setTimeout(() => {
+      setAiAnswered({ prefCode: selectedPrefCode, year: selectedYear });
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [loadingAI, selectedPrefCode, selectedYear]);
 
   const renderAIConsultation = () => {
     if (!prefecture) {
@@ -451,8 +559,6 @@ export const PrefectureDetailPanel: React.FC<PrefectureDetailPanelProps> = ({
     );
   };
 
-
-
   const renderKeepList = () => {
     const achievementsBoard = (
       <div className="mt-5 border-t border-slate-200/50 dark:border-slate-800/60 pt-4 flex flex-col gap-2.5">
@@ -553,108 +659,6 @@ export const PrefectureDetailPanel: React.FC<PrefectureDetailPanelProps> = ({
     );
   };
 
-  const calculateWeightsFromAnswers = (ans: number[]): MetricWeights => {
-    const newWeights: MetricWeights = {
-      starbucksCount: 10,
-      ramenCount: 10,
-      attractiveness: 10,
-      sunshineHours: 10,
-      onsenCount: 10,
-      hospitalCount: 10,
-      pollenLevel: 10,
-      childcareScore: 10,
-    };
-
-    // Q2: Cafe (0) vs Nature (1)
-    if (ans[1] === 0) {
-      newWeights.starbucksCount = 45;
-      newWeights.attractiveness = 20;
-    } else {
-      newWeights.onsenCount = 45;
-      newWeights.attractiveness = 20;
-    }
-
-    // Q3: Gourmet (0) vs Simple (1)
-    if (ans[2] === 0) {
-      newWeights.ramenCount = 45;
-    } else {
-      newWeights.hospitalCount = 20;
-      newWeights.childcareScore = 20;
-    }
-
-    // Q4: Climate (0) vs No Pref (1)
-    if (ans[3] === 0) {
-      newWeights.sunshineHours = 45;
-      newWeights.pollenLevel = 5;
-    } else {
-      newWeights.sunshineHours = 10;
-      newWeights.pollenLevel = 30;
-    }
-
-    return newWeights;
-  };
-
-  const calculateBestPrefecture = (tempWeights: MetricWeights, ans: number[] = []) => {
-    if (!allPrefectures || allPrefectures.length === 0) return undefined;
-    
-    // 最新年のデータのみを対象とする
-    const latestYear = Math.max(...allPrefectures.map(p => p.year));
-    const currentYearData = allPrefectures.filter(p => p.year === latestYear);
-
-    const scoredPrefectures: { pref: PrefectureData; score: number }[] = [];
-
-    for (const pref of currentYearData) {
-      const baseUrban = pref.baseUrbanScore || 50;
-      const landPrice = pref.landPriceScore || 50;
-      
-      let weightedSum = 0;
-      let weightTotal = 0;
-      
-      // Q1: コスト(0) vs 利便性(1)
-      if (ans.length > 0 && ans[0] === 0) {
-        // 固定費を抑えたい: 地価が低い（= 100 - 偏差値が高い）ほど高スコア
-        weightedSum += (100 - landPrice) * 50;
-        weightTotal += 50;
-        weightedSum += baseUrban * 10;
-        weightTotal += 10;
-      } else {
-        // 利便性重視
-        weightedSum += baseUrban * 60;
-        weightTotal += 60;
-      }
-
-      const scoreMappings = [
-        { score: pref.starbucksScore, weight: tempWeights.starbucksCount },
-        { score: pref.ramenScore, weight: tempWeights.ramenCount },
-        { score: pref.attractivenessScore, weight: tempWeights.attractiveness },
-        { score: pref.sunshineHoursScore, weight: tempWeights.sunshineHours },
-        { score: pref.onsenScore, weight: tempWeights.onsenCount },
-        { score: pref.hospitalScore, weight: tempWeights.hospitalCount },
-        { score: pref.pollenScore, weight: tempWeights.pollenLevel },
-        { score: pref.childcareScoreScore, weight: tempWeights.childcareScore },
-      ];
-
-      for (const item of scoreMappings) {
-        if (item.score !== undefined && !isNaN(item.score) && item.weight > 0) {
-          weightedSum += item.score * item.weight;
-          weightTotal += item.weight;
-        }
-      }
-
-      const totalScore = weightTotal > 0 ? (weightedSum / weightTotal) : 0;
-      scoredPrefectures.push({ pref, score: totalScore });
-    }
-
-    // スコア降順にソート
-    scoredPrefectures.sort((a, b) => b.score - a.score);
-
-    // 上位15件を候補とする（エンタメ重視のルーレット方式）
-    const candidates = scoredPrefectures.slice(0, 15);
-    
-    // 候補の中からランダムに1件を選択
-    const randomIndex = Math.floor(Math.random() * candidates.length);
-    return candidates[randomIndex].pref;
-  };
 
   const questions = [
     {
@@ -699,7 +703,8 @@ export const PrefectureDetailPanel: React.FC<PrefectureDetailPanelProps> = ({
       setQuizStep(quizStep + 1);
     } else {
       const finalWeights = calculateWeightsFromAnswers(updatedAnswers);
-      const best = calculateBestPrefecture(finalWeights, updatedAnswers);
+      // 上位候補の中からランダムに1件を選ぶ（回答クリック時のみ実行）
+      const best = pickRandom(rankQuizCandidates(allPrefectures, finalWeights, updatedAnswers));
       
       setQuizResultPref(best);
       setQuizFinished(true);
@@ -1135,7 +1140,7 @@ export const PrefectureDetailPanel: React.FC<PrefectureDetailPanelProps> = ({
 
               const winner = p1Wins > p2Wins ? pref1 : p2Wins > p1Wins ? pref2 : null;
 
-              let battleCommentary = '';
+              let battleCommentary: string;
               if (winner) {
                 const isP1Winner = winner.prefCode === pref1.prefCode;
                 const winnerName = winner.prefName;
@@ -1168,7 +1173,7 @@ export const PrefectureDetailPanel: React.FC<PrefectureDetailPanelProps> = ({
               else if (compatibility >= 70) rank = 'A';
               else if (compatibility >= 60) rank = 'B';
 
-              let dualComment = '';
+              let dualComment: string;
               if (rank === 'SSS' || rank === 'SS') {
                 dualComment = `🌟 完璧な補完関係！ 平日は大都市の刺激的な環境でキャリアを積み、週末は豊かな自然と穏やかな気候のもう一つの拠点で完全にリフレッシュする、究極のオンオフ切り替え型デュアルライフが実現できます。`;
               } else if (rank === 'S' || rank === 'A') {
@@ -1609,7 +1614,7 @@ export const PrefectureDetailPanel: React.FC<PrefectureDetailPanelProps> = ({
                           <Tooltip 
                             contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '11px' }}
                             itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
-                            formatter={(value: any, name: any) => [
+                            formatter={(value, name) => [
                               Number(value) >= 10000 
                                 ? `${(Number(value) / 10000).toFixed(1).replace('.0', '')}億円` 
                                 : `${Number(value).toLocaleString()}万円`,
@@ -1730,12 +1735,13 @@ export const TrendLineChart: React.FC<TrendLineChartProps> = ({
   });
 
   const getMetricValue = (pref: PrefectureData): number => {
-    const val = (pref as any)[currentMetric];
-    if (val === undefined || isNaN(val)) {
-      const scoreKey = (pref as any)[currentMetric + 'Score'];
-      return scoreKey !== undefined ? scoreKey : 50;
-    }
-    return val;
+    const val = pref[currentMetric];
+    if (val !== undefined && !isNaN(val)) return val;
+
+    // 実数値が欠損している場合は偏差値スコア、それも無ければ平均値 50 で代替する
+    const { scoreKey } = METRIC_CONFIGS[currentMetric];
+    const score = scoreKey ? pref[scoreKey] : undefined;
+    return typeof score === 'number' ? score : 50;
   };
 
   const allValues = prefDataMap.flatMap((d) => d.history.map(getMetricValue));

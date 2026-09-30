@@ -1,84 +1,97 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { MetricType, MetricWeights } from '../types/prefecture';
+import { METRIC_CONFIGS } from '../constants/metrics';
+import { WEIGHT_KEYS, WEIGHT_MAX, WEIGHT_MIN, WEIGHT_URL_PARAMS } from '../constants/weights';
 
-interface UrlState {
+export interface UrlState {
   metric: MetricType;
   year: number;
   prefCodes: number[];
   weights: MetricWeights;
 }
 
-export function useUrlState(
-  initialMetric: MetricType,
-  initialYear: number,
-  initialWeights: MetricWeights
-) {
-  // URLから初期状態を取得する関数
-  const getInitialStateFromUrl = (): UrlState => {
-    const params = new URLSearchParams(window.location.search);
-    
-    // weightsの解析
-    const parsedWeights = { ...initialWeights };
-    if (params.has('w_sb')) parsedWeights.starbucksCount = Number(params.get('w_sb'));
-    if (params.has('w_rm')) parsedWeights.ramenCount = Number(params.get('w_rm'));
-    if (params.has('w_at')) parsedWeights.attractiveness = Number(params.get('w_at'));
-    if (params.has('w_sn')) parsedWeights.sunshineHours = Number(params.get('w_sn'));
+const MAX_SELECTED_PREFS = 3;
 
-    // prefCodesの解析
-    let prefCodes: number[] = [];
-    if (params.has('prefs')) {
-      const prefsStr = params.get('prefs');
-      if (prefsStr) {
-        prefCodes = prefsStr.split(',').map(Number).filter(n => !isNaN(n));
-      }
+const isMetricType = (value: string | null): value is MetricType =>
+  value !== null && Object.prototype.hasOwnProperty.call(METRIC_CONFIGS, value);
+
+/**
+ * クエリ文字列から画面状態を復元する。
+ * 共有リンクは外部入力なので、未知の指標・範囲外の値・重複コードはすべて破棄/補正する。
+ */
+export function parseUrlState(search: string, defaults: UrlState): UrlState {
+  const params = new URLSearchParams(search);
+
+  const weights = { ...defaults.weights };
+  for (const key of WEIGHT_KEYS) {
+    const raw = params.get(WEIGHT_URL_PARAMS[key]);
+    const n = raw === null || raw === '' ? NaN : Number(raw);
+    if (Number.isFinite(n)) {
+      weights[key] = Math.min(WEIGHT_MAX, Math.max(WEIGHT_MIN, Math.round(n)));
     }
+  }
 
-    return {
-      metric: (params.get('metric') as MetricType) || initialMetric,
-      year: params.has('year') ? Number(params.get('year')) : initialYear,
-      weights: parsedWeights,
-      prefCodes: prefCodes,
-    };
+  const prefCodes = [
+    ...new Set(
+      (params.get('prefs') ?? '')
+        .split(',')
+        .filter(Boolean)
+        .map(Number)
+        .filter((n) => Number.isInteger(n) && n >= 1 && n <= 47),
+    ),
+  ].slice(0, MAX_SELECTED_PREFS);
+
+  const metric = params.get('metric');
+  const year = Number(params.get('year'));
+
+  return {
+    metric: isMetricType(metric) ? metric : defaults.metric,
+    year: params.has('year') && Number.isInteger(year) ? year : defaults.year,
+    prefCodes,
+    weights,
   };
+}
 
-  const initialState = getInitialStateFromUrl();
+/** 画面状態をクエリ文字列へ書き戻す (無関係な既存パラメータは保持する) */
+export function serializeUrlState(search: string, state: UrlState): string {
+  const params = new URLSearchParams(search);
+  params.set('metric', state.metric);
+  params.set('year', String(state.year));
+  if (state.prefCodes.length > 0) params.set('prefs', state.prefCodes.join(','));
+  else params.delete('prefs');
+  for (const key of WEIGHT_KEYS) {
+    params.set(WEIGHT_URL_PARAMS[key], String(state.weights[key]));
+  }
+  return params.toString();
+}
+
+export function useUrlState(initialMetric: MetricType, initialYear: number, initialWeights: MetricWeights) {
+  const [initialState] = useState(() =>
+    parseUrlState(window.location.search, {
+      metric: initialMetric,
+      year: initialYear,
+      prefCodes: [],
+      weights: initialWeights,
+    }),
+  );
 
   const [currentMetric, setCurrentMetric] = useState<MetricType>(initialState.metric);
   const [selectedYear, setSelectedYear] = useState<number>(initialState.year);
   const [selectedPrefCodes, setSelectedPrefCodes] = useState<number[]>(initialState.prefCodes);
+  const [urlWeights, setUrlWeights] = useState<MetricWeights>(initialState.weights);
 
-  // usePrefectureData側でweightsを管理するため、ここでは初期値を返すだけ
-  const initialUrlWeights = initialState.weights;
-
-  // 状態が変わるたびにURLを更新する
+  // 状態が変わるたびに URL を更新する (履歴は汚さない)
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    
-    params.set('metric', currentMetric);
-    params.set('year', selectedYear.toString());
-    
-    if (selectedPrefCodes.length > 0) {
-      params.set('prefs', selectedPrefCodes.join(','));
-    } else {
-      params.delete('prefs');
-    }
+    const query = serializeUrlState(window.location.search, {
+      metric: currentMetric,
+      year: selectedYear,
+      prefCodes: selectedPrefCodes,
+      weights: urlWeights,
+    });
+    window.history.replaceState(window.history.state, '', `${window.location.pathname}?${query}`);
+  }, [currentMetric, selectedYear, selectedPrefCodes, urlWeights]);
 
-    // URL更新
-    const newUrl = `${window.location.pathname}?${params.toString()}`;
-    window.history.replaceState({}, '', newUrl);
-  }, [currentMetric, selectedYear, selectedPrefCodes]);
-
-  // weights は外部から渡してURLを更新する関数を提供する
-  const updateUrlWeights = (weights: MetricWeights) => {
-    const params = new URLSearchParams(window.location.search);
-    params.set('w_sb', weights.starbucksCount.toString());
-    params.set('w_rm', weights.ramenCount.toString());
-    params.set('w_at', weights.attractiveness.toString());
-    params.set('w_sn', weights.sunshineHours.toString());
-    
-    const newUrl = `${window.location.pathname}?${params.toString()}`;
-    window.history.replaceState({}, '', newUrl);
-  };
+  const updateUrlWeights = useCallback((weights: MetricWeights) => setUrlWeights(weights), []);
 
   return {
     currentMetric,
@@ -87,7 +100,7 @@ export function useUrlState(
     setSelectedYear,
     selectedPrefCodes,
     setSelectedPrefCodes,
-    initialUrlWeights,
+    initialUrlWeights: initialState.weights,
     updateUrlWeights,
   };
 }

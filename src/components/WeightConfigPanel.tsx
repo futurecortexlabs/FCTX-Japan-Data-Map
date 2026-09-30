@@ -1,5 +1,5 @@
 import React from 'react';
-import { RefreshCw, Zap, Building, Heart, Sun } from 'lucide-react';
+import { RefreshCw, Zap, Building, Heart, Sun, type LucideIcon } from 'lucide-react';
 import type { MetricWeights } from '../types/prefecture';
 
 interface WeightConfigPanelProps {
@@ -7,7 +7,14 @@ interface WeightConfigPanelProps {
   onChange: (weights: MetricWeights) => void;
 }
 
-export const PRESETS: { label: string; icon: any; desc: string; weights: MetricWeights }[] = [
+interface WeightPreset {
+  label: string;
+  icon: LucideIcon;
+  desc: string;
+  weights: MetricWeights;
+}
+
+const PRESETS: WeightPreset[] = [
   {
     label: '都会利便性＆仕事重視',
     icon: Building,

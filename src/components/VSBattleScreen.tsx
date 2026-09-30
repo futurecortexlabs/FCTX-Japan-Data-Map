@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { type PrefectureData } from '../types/prefecture';
 import { playBattleStartSound, playHitSound, playKOSound, playGachaWinSound } from '../utils/audio';
 import { X, Trophy, Swords } from 'lucide-react';
-import confetti from 'canvas-confetti';
+import { confetti } from '../utils/confetti';
 
 interface VSBattleScreenProps {
   pref1: PrefectureData;
@@ -13,20 +13,42 @@ interface VSBattleScreenProps {
 
 type BattlePhase = 'intro' | 'fighting' | 'ko' | 'result';
 
+type BattleScoreKey =
+  | 'starbucksScore'
+  | 'ramenScore'
+  | 'attractivenessScore'
+  | 'landPriceScore'
+  | 'childcareScoreScore';
+
+interface BattleMetric {
+  key: BattleScoreKey;
+  label: string;
+  weight: number;
+}
+
+const metricsToCompare: readonly BattleMetric[] = [
+  { key: 'starbucksScore', label: 'スタバ充実度', weight: 15 },
+  { key: 'ramenScore', label: 'ラーメン充実度', weight: 15 },
+  { key: 'attractivenessScore', label: '魅力度', weight: 20 },
+  { key: 'landPriceScore', label: '地価の安さ', weight: 20 },
+  { key: 'childcareScoreScore', label: '子育て環境', weight: 30 }
+];
+
+/** 偏差値スコアが未設定（または 0）の場合は平均値 50 として扱う */
+const getBattleValue = (pref: PrefectureData, key: BattleScoreKey): number => pref[key] || 50;
+
 export const VSBattleScreen: React.FC<VSBattleScreenProps> = ({ pref1, pref2, onClose }) => {
   const [phase, setPhase] = useState<BattlePhase>('intro');
   const [hp1, setHp1] = useState(100);
   const [hp2, setHp2] = useState(100);
   const [currentMetricIndex, setCurrentMetricIndex] = useState(-1);
-  const [winner, setWinner] = useState<number | null>(null);
 
-  const metricsToCompare = [
-    { key: 'starbucksScore', label: 'スタバ充実度', weight: 15 },
-    { key: 'ramenScore', label: 'ラーメン充実度', weight: 15 },
-    { key: 'attractivenessScore', label: '魅力度', weight: 20 },
-    { key: 'landPriceScore', label: '地価の安さ', weight: 20 },
-    { key: 'childcareScoreScore', label: '子育て環境', weight: 30 }
-  ];
+  // 勝者は結果フェーズでの残り HP から導出する
+  const winner: number | null = phase === 'result' ? (hp1 > hp2 ? 1 : hp2 > hp1 ? 2 : 0) : null;
+  const currentMetric: BattleMetric | undefined =
+    phase === 'fighting' ? metricsToCompare[currentMetricIndex] : undefined;
+  const currentVal1 = currentMetric ? getBattleValue(pref1, currentMetric.key) : 0;
+  const currentVal2 = currentMetric ? getBattleValue(pref2, currentMetric.key) : 0;
 
   useEffect(() => {
     // Intro sequence
@@ -43,29 +65,18 @@ export const VSBattleScreen: React.FC<VSBattleScreenProps> = ({ pref1, pref2, on
 
     if (currentMetricIndex >= metricsToCompare.length || hp1 <= 0 || hp2 <= 0) {
       // Battle over
-      setTimeout(() => {
+      const koTimer = setTimeout(() => {
         setPhase('ko');
         playKOSound();
-        setTimeout(() => {
-          setPhase('result');
-          setWinner(hp1 > hp2 ? 1 : hp2 > hp1 ? 2 : 0);
-          playGachaWinSound();
-          confetti({
-            particleCount: 150,
-            spread: 100,
-            origin: { y: 0.5 },
-            colors: ['#ef4444', '#3b82f6', '#f59e0b']
-          });
-        }, 2000);
       }, 1000);
-      return;
+      return () => clearTimeout(koTimer);
     }
 
     // Process current attack
     const timer = setTimeout(() => {
       const metric = metricsToCompare[currentMetricIndex];
-      const val1 = (pref1 as any)[metric.key] || 50;
-      const val2 = (pref2 as any)[metric.key] || 50;
+      const val1 = getBattleValue(pref1, metric.key);
+      const val2 = getBattleValue(pref2, metric.key);
 
       playHitSound();
 
@@ -89,6 +100,22 @@ export const VSBattleScreen: React.FC<VSBattleScreenProps> = ({ pref1, pref2, on
 
     return () => clearTimeout(timer);
   }, [phase, currentMetricIndex, hp1, hp2, pref1, pref2]);
+
+  useEffect(() => {
+    if (phase !== 'ko') return;
+
+    const resultTimer = setTimeout(() => {
+      setPhase('result');
+      playGachaWinSound();
+      confetti({
+        particleCount: 150,
+        spread: 100,
+        origin: { y: 0.5 },
+        colors: ['#ef4444', '#3b82f6', '#f59e0b']
+      });
+    }, 2000);
+    return () => clearTimeout(resultTimer);
+  }, [phase]);
 
   return (
     <motion.div
@@ -168,7 +195,7 @@ export const VSBattleScreen: React.FC<VSBattleScreenProps> = ({ pref1, pref2, on
               </motion.div>
             )}
 
-            {phase === 'fighting' && currentMetricIndex >= 0 && currentMetricIndex < metricsToCompare.length && (
+            {currentMetric && (
               <motion.div
                 key={`metric-${currentMetricIndex}`}
                 initial={{ y: 50, opacity: 0, rotateX: 45 }}
@@ -179,30 +206,24 @@ export const VSBattleScreen: React.FC<VSBattleScreenProps> = ({ pref1, pref2, on
               >
                 <div className="text-slate-400 font-bold mb-2 tracking-widest text-sm uppercase">Round {currentMetricIndex + 1}</div>
                 <div className="text-4xl md:text-5xl font-black text-white mb-8 bg-gradient-to-b from-white to-slate-400 bg-clip-text text-transparent">
-                  {metricsToCompare[currentMetricIndex].label}
+                  {currentMetric.label}
                 </div>
-                
+
                 <div className="flex items-center gap-12 w-full justify-between">
-                  <motion.div 
+                  <motion.div
                     className="text-5xl font-black text-rose-500 w-1/3 text-center"
-                    animate={
-                      ((pref1 as any)[metricsToCompare[currentMetricIndex].key] || 50) > ((pref2 as any)[metricsToCompare[currentMetricIndex].key] || 50)
-                      ? { scale: [1, 1.5, 1] } : {}
-                    }
+                    animate={currentVal1 > currentVal2 ? { scale: [1, 1.5, 1] } : {}}
                   >
-                    {Math.round((pref1 as any)[metricsToCompare[currentMetricIndex].key] || 50)}
+                    {Math.round(currentVal1)}
                   </motion.div>
-                  
+
                   <Swords className="w-12 h-12 text-slate-500 opacity-50 shrink-0" />
 
-                  <motion.div 
+                  <motion.div
                     className="text-5xl font-black text-blue-500 w-1/3 text-center"
-                    animate={
-                      ((pref2 as any)[metricsToCompare[currentMetricIndex].key] || 50) > ((pref1 as any)[metricsToCompare[currentMetricIndex].key] || 50)
-                      ? { scale: [1, 1.5, 1] } : {}
-                    }
+                    animate={currentVal2 > currentVal1 ? { scale: [1, 1.5, 1] } : {}}
                   >
-                    {Math.round((pref2 as any)[metricsToCompare[currentMetricIndex].key] || 50)}
+                    {Math.round(currentVal2)}
                   </motion.div>
                 </div>
               </motion.div>

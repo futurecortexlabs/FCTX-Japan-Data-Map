@@ -16,7 +16,7 @@ export function generateNomadRoute(prefectures: PrefectureData[]): NomadSeason[]
   }
 
   // クローンして操作
-  let available = [...prefectures];
+  const available = [...prefectures];
   const route: NomadSeason[] = [];
 
   // 1. 春 (Spring) - 花粉の少なさ(pollenScore)が高い場所を優先

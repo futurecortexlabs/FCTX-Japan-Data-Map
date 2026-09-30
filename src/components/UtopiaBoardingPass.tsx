@@ -1,5 +1,28 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { PrefectureData } from '../types/prefecture';
+
+const SEAT_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'] as const;
+const BARCODE_BAR_COUNT = 20;
+
+interface TicketDetails {
+  dateStr: string;
+  timeStr: string;
+  seat: string;
+  barcodeWidths: number[];
+  serialNumber: string;
+}
+
+/** 発券時に一度だけ生成するチケット情報（日時・座席・バーコードはランダム） */
+const issueTicket = (): TicketDetails => {
+  const issuedAt = new Date();
+  return {
+    dateStr: issuedAt.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
+    timeStr: issuedAt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+    seat: `${Math.floor(Math.random() * 30 + 1)}${SEAT_LETTERS[Math.floor(Math.random() * SEAT_LETTERS.length)]}`,
+    barcodeWidths: Array.from({ length: BARCODE_BAR_COUNT }, () => Math.random() * 4 + 1),
+    serialNumber: Math.random().toString().substring(2, 14),
+  };
+};
 
 interface UtopiaBoardingPassProps {
   prefecture: PrefectureData;
@@ -7,12 +30,9 @@ interface UtopiaBoardingPassProps {
 }
 
 export const UtopiaBoardingPass: React.FC<UtopiaBoardingPassProps> = ({ prefecture, onClose }) => {
-  const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-  const timeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-  
-  // Random flight number and seat
+  // ランダム要素はマウント時に一度だけ確定させ、再レンダーで座席やバーコードが変わらないようにする
+  const [{ dateStr, timeStr, seat, barcodeWidths, serialNumber }] = useState(issueTicket);
   const flightNum = `UX-${prefecture.prefCode.toString().padStart(3, '0')}`;
-  const seat = `${Math.floor(Math.random() * 30 + 1)}${['A', 'B', 'C', 'D', 'E', 'F'][Math.floor(Math.random() * 6)]}`;
 
   return (
     <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm animate-fade-in" onClick={onClose}>
@@ -140,11 +160,11 @@ export const UtopiaBoardingPass: React.FC<UtopiaBoardingPassProps> = ({ prefectu
           <div className="mt-8 text-center">
             {/* Fake barcode using a simple striped div pattern if font isn't loaded */}
             <div className="w-full h-12 bg-white/20 rounded-md mb-2 flex items-center justify-between px-2 opacity-80">
-              {Array.from({ length: 20 }).map((_, i) => (
-                <div key={i} className="bg-white h-full" style={{ width: `${Math.random() * 4 + 1}px` }} />
+              {barcodeWidths.map((width, i) => (
+                <div key={i} className="bg-white h-full" style={{ width: `${width}px` }} />
               ))}
             </div>
-            <p className="text-[8px] text-indigo-200 tracking-[0.2em]">{Math.random().toString().substring(2, 14)}</p>
+            <p className="text-[8px] text-indigo-200 tracking-[0.2em]">{serialNumber}</p>
           </div>
         </div>
       </div>
