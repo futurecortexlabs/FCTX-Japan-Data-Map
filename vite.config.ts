@@ -23,13 +23,14 @@ export default defineConfig({
     }
   },
   test: {
-    include: ['src/**/*.test.ts'],
+    include: ['src/**/*.test.{ts,tsx}'],
     environment: 'node',
     coverage: {
       provider: 'v8',
-      include: ['src/utils/**', 'src/hooks/useUrlState.ts', 'src/constants/**'],
+      // カバレッジ指標はドメインロジック層に限定する (フック・UI は Testing Library と Playwright E2E で検証)
+      include: ['src/utils/**', 'src/constants/**', 'src/components/detail-panel/logic.ts'],
       // Web Audio / Web Speech / Canvas に依存する薄いラッパーはブラウザでのみ検証する
-      exclude: ['src/utils/audio.ts', 'src/utils/speech.ts', 'src/utils/confetti.ts', 'src/**/*.test.ts'],
+      exclude: ['src/utils/audio.ts', 'src/utils/speech.ts', 'src/utils/confetti.ts', 'src/**/*.test.{ts,tsx}'],
       reporter: ['text', 'html'],
     },
   },

@@ -4,7 +4,8 @@
 ![React 19](https://img.shields.io/badge/React-19-61dafb?logo=react&logoColor=white)
 ![TypeScript strict](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)
 ![Vite 8](https://img.shields.io/badge/Vite-8-646cff?logo=vite&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-74%20passing-brightgreen?logo=vitest&logoColor=white)
+![Unit tests](https://img.shields.io/badge/unit%20tests-115%20passing-brightgreen?logo=vitest&logoColor=white)
+![E2E](https://img.shields.io/badge/E2E-Playwright%20desktop%20%2B%20mobile-2EAD33?logo=playwright&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
 **▶ デモ: https://futurecortexlabs.github.io/FCTX-Japan-Data-Map/**
@@ -64,7 +65,7 @@ flowchart LR
 
 | レイヤー | 役割 | 主なファイル |
 | --- | --- | --- |
-| **ドメインロジック** (純粋関数・カバレッジ 90%+) | 偏差値計算、スコアリング、CSV 正規化、生活費モデル、FIRE 試算 | `src/utils/` |
+| **ドメインロジック** (純粋関数・カバレッジ 96%) | 偏差値計算、スコアリング、CSV 正規化、生活費モデル、FIRE 試算 | `src/utils/` |
 | **Worker 境界** | 判別可能ユニオン型のメッセージプロトコル | `src/workers/` |
 | **状態管理フック** | URL 同期、Worker 通信、永続化、実績 | `src/hooks/` |
 | **UI** | 地図・チャート・モーダル | `src/components/` |
@@ -76,7 +77,9 @@ flowchart LR
 - **Leaflet と React の橋渡し**: Leaflet のイベントハンドラは初回バインド時のクロージャを保持するため、最新 props を ref / `useEffectEvent` 経由で参照。レイヤーを再生成せずスタイルとツールチップのみ差し替えます。
 - **外部入力は全て検証**: URL パラメータ（未知の指標名・範囲外ウェイト・重複コード）、localStorage（壊れた値・旧スキーマ）、CSV（不正な都道府県コード）はすべて型ガード／クランプを通してから採用。Leaflet の tooltip に入るユーザー由来文字列は HTML エスケープ（XSS 対策）。
 - **React Compiler 準拠**: `eslint-plugin-react-hooks` v7 の `purity` / `set-state-in-effect` ルールを含め lint エラー 0。effect での state 同期を「レンダー中の導出」や `key` による再マウントに置き換えています。
-- **アクセシビリティ**: モーダルの `role="dialog"`、アイコンボタンの `aria-label`、`prefers-reduced-motion` / `prefers-color-scheme` の尊重。
+- **アクセシビリティ**: モーダルの `role="dialog"`、アイコンボタンの `aria-label`、ランキング行のキーボード操作 (Enter / Space) と `aria-selected`、指標ボタンの `aria-pressed`、`prefers-reduced-motion`（パーティクル・装飾アニメーション停止）/ `prefers-color-scheme` の尊重。
+- **障害の局所化**: 地図・ランキング・詳細パネル・チャートをそれぞれ Error Boundary で囲み、1 つのウィジェットの描画エラーで画面全体が落ちないようにしています（入力が変わると自動で復帰を試行）。
+- **フレームワークのバグへの対処**: E2E テストで「指標を切り替えても地図の色が変わらない」不具合を検出。原因は React 19.2 の本番ビルドで `React.memo` 化されたコンポーネント内の `useEffectEvent` が初回クロージャのまま更新されないことで（開発ビルドでは再現しない）、依存関係を明示した `useCallback` + `useEffect` に置き換えて回避しています。
 
 ---
 
@@ -107,14 +110,15 @@ npm run dev          # 開発サーバー (http://localhost:5173/FCTX-Japan-Data
 | コマンド | 内容 |
 | --- | --- |
 | `npm run check` | 型チェック + lint + テストをまとめて実行 |
-| `npm run test` / `test:watch` | Vitest によるユニットテスト |
+| `npm run test` / `test:watch` | Vitest によるユニット / コンポーネントテスト |
+| `npm run test:e2e` | Playwright による E2E テスト（本番ビルドをデスクトップ・モバイルで検証） |
 | `npm run test:coverage` | カバレッジレポート (`coverage/index.html`) |
 | `npm run build` | 型チェック + 本番ビルド |
 | `npm run optimize:geojson` | 地図データの再最適化 |
 
 ### CI/CD
 
-GitHub Actions で PR / push ごとに **型チェック → lint → テスト（カバレッジ）→ ビルド** を実行し、`main` ブランチでは検証を通過した成果物のみを GitHub Pages にデプロイします。カバレッジとバンドルサイズはジョブサマリーに出力されます。依存関係は Dependabot で週次更新。
+GitHub Actions で PR / push ごとに **型チェック → lint → ユニットテスト（カバレッジ）→ ビルド** と、並行して **Playwright E2E（デスクトップ / モバイル）** を実行し、両方を通過した場合のみ `main` ブランチの成果物を GitHub Pages にデプロイします。E2E が失敗した場合はトレース付きレポートがアーティファクトとして保存されます。カバレッジとバンドルサイズはジョブサマリーに出力されます。依存関係は Dependabot で週次更新。
 
 ### データパイプライン
 
@@ -138,7 +142,7 @@ GitHub Actions で PR / push ごとに **型チェック → lint → テスト�
 - **アニメーション**: Framer Motion, canvas-confetti
 - **地図描画**: React Leaflet（ベースマップ: [国土地理院 淡色地図](https://maps.gsi.go.jp/development/ichiran.html)）
 - **グラフ描画**: Recharts
-- **テスト / 品質**: Vitest, ESLint (typescript-eslint, react-hooks v7), GitHub Actions
+- **テスト / 品質**: Vitest, Testing Library, Playwright, ESLint (typescript-eslint, react-hooks v7), GitHub Actions
 
 ## 🗺️ データ出典
 - 地図タイル: 国土地理院
