@@ -66,7 +66,7 @@ const BASIC_METRICS: readonly MetricRowDef[] = [
     scoreKey: 'hospitalScore',
     icon: Activity,
     color: 'bg-cyan-500',
-    textColor: 'text-cyan-550',
+    textColor: 'text-cyan-600',
     bgColor: 'bg-cyan-50 dark:bg-cyan-950/10',
     borderColor: 'border-cyan-100 dark:border-cyan-900/20',
   },
@@ -77,7 +77,7 @@ const BASIC_METRICS: readonly MetricRowDef[] = [
     scoreKey: 'childcareScoreScore',
     icon: Heart,
     color: 'bg-pink-500',
-    textColor: 'text-pink-550 dark:text-pink-400',
+    textColor: 'text-pink-600 dark:text-pink-400',
     bgColor: 'bg-pink-50 dark:bg-pink-950/10',
     borderColor: 'border-pink-100 dark:border-pink-900/20',
   },
@@ -114,7 +114,7 @@ const LIFESTYLE_METRICS: readonly MetricRowDef[] = [
     scoreKey: 'onsenScore',
     icon: Flame,
     color: 'bg-red-500',
-    textColor: 'text-red-550 dark:text-red-400',
+    textColor: 'text-red-600 dark:text-red-400',
     bgColor: 'bg-red-50 dark:bg-red-950/10',
     borderColor: 'border-red-100 dark:border-red-900/20',
   },
@@ -136,7 +136,7 @@ const LIFESTYLE_METRICS: readonly MetricRowDef[] = [
     scoreKey: 'sunshineHoursScore',
     icon: Sun,
     color: 'bg-yellow-500',
-    textColor: 'text-yellow-550 dark:text-yellow-400',
+    textColor: 'text-yellow-600 dark:text-yellow-400',
     bgColor: 'bg-yellow-50 dark:bg-yellow-950/10',
     borderColor: 'border-yellow-100 dark:border-yellow-900/20',
   },
@@ -147,7 +147,7 @@ const LIFESTYLE_METRICS: readonly MetricRowDef[] = [
     scoreKey: 'pollenScore',
     icon: Wind,
     color: 'bg-teal-500',
-    textColor: 'text-teal-650',
+    textColor: 'text-teal-700',
     bgColor: 'bg-teal-50 dark:bg-teal-950/10',
     borderColor: 'border-teal-100 dark:border-teal-900/20',
   },
@@ -287,16 +287,16 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
           <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 leading-normal italic text-left">
             " {catchphrase.text} "
           </p>
-          <div className="text-[9px] text-slate-400 dark:text-slate-550 border-t border-slate-200/30 dark:border-slate-850/40 pt-1 text-left flex items-start gap-1 font-semibold leading-relaxed">
+          <div className="text-[9px] text-slate-400 dark:text-slate-600 border-t border-slate-200/30 dark:border-slate-800/40 pt-1 text-left flex items-start gap-1 font-semibold leading-relaxed">
             <span className="shrink-0 text-amber-500">💡</span>
             <span>{catchphrase.advice}</span>
           </div>
         </div>
 
         {/* 移住スタイルバッジ */}
-        <div className="flex items-center gap-1.5 bg-indigo-50/30 dark:bg-indigo-950/15 border border-indigo-150/20 dark:border-indigo-900/20 px-2.5 py-1.5 rounded-xl w-fit shrink-0 mt-1">
+        <div className="flex items-center gap-1.5 bg-indigo-50/30 dark:bg-indigo-950/15 border border-indigo-100/20 dark:border-indigo-900/20 px-2.5 py-1.5 rounded-xl w-fit shrink-0 mt-1">
           <span className="text-sm select-none">{style.emoji}</span>
-          <span className="text-[10px] font-black text-indigo-650 dark:text-indigo-400">
+          <span className="text-[10px] font-black text-indigo-700 dark:text-indigo-400">
             移住スタイル: {style.name}
           </span>
         </div>

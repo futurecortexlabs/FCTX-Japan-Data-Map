@@ -50,7 +50,7 @@ export const AiTab: React.FC<AiTabProps> = ({ prefecture, weights, answered, onA
   if (!prefecture) {
     return (
       <div className="h-full flex flex-col items-center justify-center text-center py-10">
-        <Brain className="w-8 h-8 text-slate-350 dark:text-slate-700 mb-2" />
+        <Brain className="w-8 h-8 text-slate-400 dark:text-slate-700 mb-2" />
         <p className="text-xs text-slate-400">都道府県を選択した状態で相談してください。</p>
       </div>
     );
@@ -60,9 +60,9 @@ export const AiTab: React.FC<AiTabProps> = ({ prefecture, weights, answered, onA
     return (
       <div className="flex flex-col items-center justify-center py-16 gap-3">
         <div className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-indigo-650 dark:bg-indigo-400 animate-bounce [animation-delay:-0.3s]" />
-          <span className="w-2.5 h-2.5 rounded-full bg-indigo-650 dark:bg-indigo-400 animate-bounce [animation-delay:-0.15s]" />
-          <span className="w-2.5 h-2.5 rounded-full bg-indigo-650 dark:bg-indigo-400 animate-bounce" />
+          <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 dark:bg-indigo-400 animate-bounce [animation-delay:-0.3s]" />
+          <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 dark:bg-indigo-400 animate-bounce [animation-delay:-0.15s]" />
+          <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 dark:bg-indigo-400 animate-bounce" />
         </div>
         <p className="text-xs font-bold text-slate-400 dark:text-slate-500 animate-pulse">
           AI移住エージェントがスライダー設定とデータを分析中...
@@ -91,7 +91,7 @@ export const AiTab: React.FC<AiTabProps> = ({ prefecture, weights, answered, onA
     <div className="flex flex-col gap-4 h-full min-h-0 overflow-y-auto pr-1 text-left">
       <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-2 justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-full bg-indigo-655 text-white flex items-center justify-center text-xs font-black shadow-md">
+          <div className="w-7 h-7 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-black shadow-md">
             AI
           </div>
           <div>
@@ -108,7 +108,7 @@ export const AiTab: React.FC<AiTabProps> = ({ prefecture, weights, answered, onA
           className={`px-3 py-1.5 rounded-full text-[10px] font-bold shadow-sm transition-colors border ${
             isSpeaking
               ? 'bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/40 dark:text-rose-300 dark:border-rose-800'
-              : 'bg-indigo-50 text-indigo-650 border-indigo-200 hover:bg-indigo-100 dark:bg-indigo-900/40 dark:text-indigo-300 dark:border-indigo-800 dark:hover:bg-indigo-900/60'
+              : 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100 dark:bg-indigo-900/40 dark:text-indigo-300 dark:border-indigo-800 dark:hover:bg-indigo-900/60'
           }`}
         >
           {isSpeaking ? '⏹️ 音声停止' : '🗣️ フルボイス再生'}
@@ -116,8 +116,8 @@ export const AiTab: React.FC<AiTabProps> = ({ prefecture, weights, answered, onA
       </div>
 
       {/* 診断文 */}
-      <div className="p-3.5 bg-gradient-to-br from-indigo-50/20 to-purple-50/10 dark:from-indigo-950/10 dark:to-purple-950/5 border border-indigo-150/30 dark:border-indigo-900/20 rounded-xl space-y-2">
-        <span className="text-[9px] font-black text-indigo-655 dark:text-indigo-400 tracking-wider uppercase block">
+      <div className="p-3.5 bg-gradient-to-br from-indigo-50/20 to-purple-50/10 dark:from-indigo-950/10 dark:to-purple-950/5 border border-indigo-100/30 dark:border-indigo-900/20 rounded-xl space-y-2">
+        <span className="text-[9px] font-black text-indigo-700 dark:text-indigo-400 tracking-wider uppercase block">
           診断レポート
         </span>
         <p className="text-xs font-bold text-slate-700 dark:text-slate-300 leading-relaxed">
@@ -134,9 +134,9 @@ export const AiTab: React.FC<AiTabProps> = ({ prefecture, weights, answered, onA
           {advice.steps.map((step, idx) => (
             <div
               key={idx}
-              className="flex gap-2.5 items-start bg-slate-50/50 dark:bg-slate-850/40 p-2.5 border border-slate-100 dark:border-slate-800/60 rounded-xl"
+              className="flex gap-2.5 items-start bg-slate-50/50 dark:bg-slate-800/40 p-2.5 border border-slate-100 dark:border-slate-800/60 rounded-xl"
             >
-              <span className="w-5 h-5 rounded-full bg-indigo-50 dark:bg-indigo-950/50 text-indigo-655 dark:text-indigo-400 text-xs font-black flex items-center justify-center shrink-0">
+              <span className="w-5 h-5 rounded-full bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-400 text-xs font-black flex items-center justify-center shrink-0">
                 {idx + 1}
               </span>
               <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed font-semibold">
@@ -154,7 +154,7 @@ export const AiTab: React.FC<AiTabProps> = ({ prefecture, weights, answered, onA
           <span className="text-[9px] font-black text-red-600 dark:text-red-400 tracking-wider block mb-0.5">
             現地での留意点・リスク
           </span>
-          <p className="text-[10px] text-slate-550 dark:text-slate-400 leading-relaxed font-semibold">
+          <p className="text-[10px] text-slate-600 dark:text-slate-400 leading-relaxed font-semibold">
             {advice.warning}
           </p>
         </div>

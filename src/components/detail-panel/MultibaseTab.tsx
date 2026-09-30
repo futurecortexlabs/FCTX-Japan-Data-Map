@@ -25,7 +25,7 @@ export const MultibaseTab: React.FC<MultibaseTabProps> = ({ prefectures }) => {
 
         <div className="text-right">
           <span className="text-[9px] text-slate-400 block">統合満足度</span>
-          <span className="text-sm font-black text-indigo-655 dark:text-indigo-400 tabular-nums">
+          <span className="text-sm font-black text-indigo-700 dark:text-indigo-400 tabular-nums">
             {plan.avgScore} <span className="text-[9px] font-normal text-slate-400">点</span>
           </span>
         </div>
@@ -37,7 +37,7 @@ export const MultibaseTab: React.FC<MultibaseTabProps> = ({ prefectures }) => {
           return (
             <div
               key={slot.season}
-              className="flex items-center gap-3.5 p-3 bg-slate-50/50 dark:bg-slate-850/40 border border-slate-200/50 dark:border-slate-800/60 rounded-xl hover:shadow-sm transition-all duration-300"
+              className="flex items-center gap-3.5 p-3 bg-slate-50/50 dark:bg-slate-800/40 border border-slate-200/50 dark:border-slate-800/60 rounded-xl hover:shadow-sm transition-all duration-300"
             >
               <div className="w-10 h-10 rounded-full bg-white dark:bg-slate-900 border border-slate-200/40 dark:border-slate-800/60 flex flex-col items-center justify-center shadow-inner shrink-0 text-center">
                 <span className="text-lg leading-none">{slot.icon}</span>
@@ -61,7 +61,7 @@ export const MultibaseTab: React.FC<MultibaseTabProps> = ({ prefectures }) => {
                     {catchphrase.rarity}
                   </span>
                 </div>
-                <p className="text-[10px] text-slate-500 dark:text-slate-450 font-bold truncate mt-0.5">
+                <p className="text-[10px] text-slate-500 dark:text-slate-500 font-bold truncate mt-0.5">
                   {slot.reason}
                 </p>
               </div>

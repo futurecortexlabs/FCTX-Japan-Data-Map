@@ -12,7 +12,7 @@ interface KeepTabProps {
 const AchievementsBoard: React.FC<{ unlockedAchievements: string[] }> = ({ unlockedAchievements }) => (
   <div className="mt-5 border-t border-slate-200/50 dark:border-slate-800/60 pt-4 flex flex-col gap-2.5">
     <div className="flex justify-between items-center text-left">
-      <span className="text-xs font-black text-indigo-650 dark:text-indigo-400 uppercase tracking-wider block">
+      <span className="text-xs font-black text-indigo-700 dark:text-indigo-400 uppercase tracking-wider block">
         🏆 獲得実績 ({unlockedAchievements.length} / {ACHIEVEMENTS.length})
       </span>
     </div>
@@ -24,7 +24,7 @@ const AchievementsBoard: React.FC<{ unlockedAchievements: string[] }> = ({ unloc
             key={ach.id}
             className={`p-2 rounded-xl border flex gap-1.5 transition-all duration-300 ${
               isUnlocked
-                ? 'bg-indigo-50/15 border-indigo-200/40 dark:bg-indigo-950/10 dark:border-indigo-900/30 text-slate-850 dark:text-white'
+                ? 'bg-indigo-50/15 border-indigo-200/40 dark:bg-indigo-950/10 dark:border-indigo-900/30 text-slate-900 dark:text-white'
                 : 'bg-slate-50/40 border-slate-200/20 dark:bg-slate-900/10 dark:border-slate-900/40 text-slate-400 opacity-60'
             }`}
             title={ach.description}
@@ -53,8 +53,8 @@ export const KeepTab: React.FC<KeepTabProps> = ({ keepList, onSelectPrefecture, 
     return (
       <div className="flex flex-col h-full min-h-0 overflow-y-auto pr-1">
         <div className="flex flex-col items-center justify-center py-6 text-center gap-2">
-          <Bookmark className="w-6 h-6 text-slate-350 dark:text-slate-655" />
-          <p className="text-[10px] text-slate-450 dark:text-slate-500 max-w-[200px] leading-relaxed font-bold">
+          <Bookmark className="w-6 h-6 text-slate-400 dark:text-slate-700" />
+          <p className="text-[10px] text-slate-500 dark:text-slate-500 max-w-[200px] leading-relaxed font-bold">
             キープしている理想郷はありません。詳細タブのしおりマークをクリックしてお気に入り登録しましょう！
           </p>
         </div>

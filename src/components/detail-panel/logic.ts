@@ -260,11 +260,11 @@ export interface DuelResult {
 /** 2県の主要5カテゴリを対戦させ、勝敗と実況コメントを返す（欠損スコアは 50 扱い） */
 export const computeDuel = (pref1: PrefectureData, pref2: PrefectureData): DuelResult => {
   const categories: DuelCategory[] = [
-    { name: '住居費安さ', p1: pref1.landPriceScore || 50, p2: pref2.landPriceScore || 50 },
-    { name: '生活利便', p1: pref1.populationScore || 50, p2: pref2.populationScore || 50 },
-    { name: 'カフェ充実', p1: pref1.starbucksScore || 50, p2: pref2.starbucksScore || 50 },
-    { name: 'グルメ充実', p1: pref1.ramenScore || 50, p2: pref2.ramenScore || 50 },
-    { name: '気候快適さ', p1: pref1.sunshineHoursScore || 50, p2: pref2.sunshineHoursScore || 50 },
+    { name: '住居費安さ', p1: pref1.landPriceScore ?? 50, p2: pref2.landPriceScore ?? 50 },
+    { name: '生活利便', p1: pref1.populationScore ?? 50, p2: pref2.populationScore ?? 50 },
+    { name: 'カフェ充実', p1: pref1.starbucksScore ?? 50, p2: pref2.starbucksScore ?? 50 },
+    { name: 'グルメ充実', p1: pref1.ramenScore ?? 50, p2: pref2.ramenScore ?? 50 },
+    { name: '気候快適さ', p1: pref1.sunshineHoursScore ?? 50, p2: pref2.sunshineHoursScore ?? 50 },
   ];
 
   let p1Wins = 0;
@@ -292,6 +292,12 @@ export const computeDuel = (pref1: PrefectureData, pref2: PrefectureData): DuelR
 };
 
 /** HP バー幅（%）。5〜100 にクランプする */
+/**
+ * 偏差値を「点」として表示するための 0〜100 へのクランプ。
+ * 偏差値は外れ値で範囲外になり得る (例: 東京都の住居費安さ ≒ -13)。勝敗判定は生の値で行い、表示だけを丸める。
+ */
+export const toDisplayPoints = (score: number): number => Math.round(Math.min(100, Math.max(0, score)));
+
 export const duelBarPercent = (score: number): number => Math.max(Math.min(score, 100), 5);
 
 export type CompatibilityRank = 'SSS' | 'SS' | 'S' | 'A' | 'B' | 'C';

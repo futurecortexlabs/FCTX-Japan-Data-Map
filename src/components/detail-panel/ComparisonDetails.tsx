@@ -1,8 +1,10 @@
+import { lazy, Suspense } from 'react';
 import { Flame, Heart } from 'lucide-react';
 import type { MetricType, PrefectureData } from '../../types/prefecture';
-import { ComparisonRadarChart } from '../ComparisonRadarChart';
 import { TrendLineChart } from './TrendLineChart';
-import { computeDualCompatibility, computeDuel, duelBarPercent } from './logic';
+const ComparisonRadarChart = lazy(() => import('../ComparisonRadarChart').then((m) => ({ default: m.ComparisonRadarChart })));
+
+import { computeDualCompatibility, computeDuel, duelBarPercent, toDisplayPoints } from './logic';
 
 export type ComparisonSubTab = 'radar' | 'duel' | 'dual';
 
@@ -46,7 +48,7 @@ export const ComparisonDetails: React.FC<ComparisonDetailsProps> = ({
           <button
             key={tab.id}
             onClick={() => onCompTabChange(tab.id)}
-            className={`flex-1 py-1 text-[10px] font-extrabold rounded transition-all cursor-pointer ${compTab === tab.id ? 'bg-white dark:bg-slate-800 text-indigo-650 dark:text-indigo-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-350'}`}
+            className={`flex-1 py-1 text-[10px] font-extrabold rounded transition-all cursor-pointer ${compTab === tab.id ? 'bg-white dark:bg-slate-800 text-indigo-700 dark:text-indigo-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-400'}`}
           >
             {tab.label}
           </button>
@@ -56,7 +58,9 @@ export const ComparisonDetails: React.FC<ComparisonDetailsProps> = ({
       <div className="flex-1 min-h-0 overflow-y-auto pr-1 flex flex-col gap-4">
         {compTab === 'radar' ? (
           <div className="shrink-0 h-[220px]">
-            <ComparisonRadarChart prefecture1={pref1} prefecture2={pref2} />
+            <Suspense fallback={<div className="h-full min-h-[250px] rounded-xl bg-slate-100/60 dark:bg-slate-800/40 animate-pulse" />}>
+              <ComparisonRadarChart prefecture1={pref1} prefecture2={pref2} />
+            </Suspense>
           </div>
         ) : compTab === 'duel' ? (
           <div className="flex flex-col gap-3 h-full min-h-0 overflow-y-auto pr-1">
@@ -87,9 +91,9 @@ export const ComparisonDetails: React.FC<ComparisonDetailsProps> = ({
               {duel.categories.map((cat) => (
                 <div key={cat.name} className="space-y-1">
                   <div className="flex justify-between items-center text-[10px] px-1 font-bold text-slate-500 dark:text-slate-400">
-                    <span className={cat.p1 > cat.p2 ? 'text-rose-550 dark:text-rose-400' : ''}>{cat.p1.toFixed(0)}点</span>
-                    <span className="bg-slate-100 dark:bg-slate-800 px-1.5 py-0.2 rounded text-[9px] text-slate-600 dark:text-slate-350">{cat.name}</span>
-                    <span className={cat.p2 > cat.p1 ? 'text-indigo-550 dark:text-indigo-400' : ''}>{cat.p2.toFixed(0)}点</span>
+                    <span className={cat.p1 > cat.p2 ? 'text-rose-600 dark:text-rose-400' : ''}>{toDisplayPoints(cat.p1)}点</span>
+                    <span className="bg-slate-100 dark:bg-slate-800 px-1.5 py-0.2 rounded text-[9px] text-slate-600 dark:text-slate-400">{cat.name}</span>
+                    <span className={cat.p2 > cat.p1 ? 'text-indigo-600 dark:text-indigo-400' : ''}>{toDisplayPoints(cat.p2)}点</span>
                   </div>
                   <div className="flex items-center gap-2">
                     {/* 左 HP バー */}
@@ -122,12 +126,12 @@ export const ComparisonDetails: React.FC<ComparisonDetailsProps> = ({
             </div>
 
             {/* バトルコメンタリー */}
-            <div className="p-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-850/60 rounded-xl mt-1 space-y-1 text-left shrink-0">
-              <div className="flex items-center gap-1.5 text-[9px] font-black text-slate-450 dark:text-slate-500">
+            <div className="p-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800/60 rounded-xl mt-1 space-y-1 text-left shrink-0">
+              <div className="flex items-center gap-1.5 text-[9px] font-black text-slate-500 dark:text-slate-500">
                 <Flame className="w-3 h-3 text-amber-500" />
                 <span>BATTLE RESULT</span>
               </div>
-              <p className="text-[10px] font-bold text-slate-650 dark:text-slate-350 leading-relaxed">
+              <p className="text-[10px] font-bold text-slate-700 dark:text-slate-400 leading-relaxed">
                 {duel.commentary}
               </p>
             </div>
@@ -139,7 +143,7 @@ export const ComparisonDetails: React.FC<ComparisonDetailsProps> = ({
               <div className="relative flex items-center justify-center">
                 <svg className="w-20 h-20 transform -rotate-90">
                   <circle cx="40" cy="40" r={RING_RADIUS} stroke="currentColor" strokeWidth="5" fill="transparent" className="text-slate-100 dark:text-slate-800" />
-                  <circle cx="40" cy="40" r={RING_RADIUS} stroke="currentColor" strokeWidth="5" fill="transparent" strokeDasharray={`${RING_CIRCUMFERENCE}`} strokeDashoffset={`${RING_CIRCUMFERENCE * (1 - compatibility / 100)}`} className="text-rose-500 dark:text-rose-450 transition-all duration-1000" />
+                  <circle cx="40" cy="40" r={RING_RADIUS} stroke="currentColor" strokeWidth="5" fill="transparent" strokeDasharray={`${RING_CIRCUMFERENCE}`} strokeDashoffset={`${RING_CIRCUMFERENCE * (1 - compatibility / 100)}`} className="text-rose-500 dark:text-rose-500 transition-all duration-1000" />
                 </svg>
                 <div className="absolute flex flex-col items-center">
                   <span className="text-[8px] font-extrabold text-slate-400 uppercase tracking-widest">MATCH</span>
@@ -148,7 +152,7 @@ export const ComparisonDetails: React.FC<ComparisonDetailsProps> = ({
                 </div>
               </div>
               <div className="space-y-0.5 mt-1">
-                <h4 className="text-xs font-black text-slate-850 dark:text-white">
+                <h4 className="text-xs font-black text-slate-900 dark:text-white">
                   {pref1.prefName} &times; {pref2.prefName}
                 </h4>
                 <p className="text-[9px] text-slate-400">多拠点ライフ相性診断</p>
@@ -156,12 +160,12 @@ export const ComparisonDetails: React.FC<ComparisonDetailsProps> = ({
             </div>
 
             {/* コメンタリー */}
-            <div className="p-3 bg-gradient-to-br from-indigo-50/20 to-purple-50/10 dark:from-indigo-950/10 dark:to-purple-950/5 border border-indigo-150/30 dark:border-indigo-900/20 rounded-xl space-y-1 text-left w-full">
+            <div className="p-3 bg-gradient-to-br from-indigo-50/20 to-purple-50/10 dark:from-indigo-950/10 dark:to-purple-950/5 border border-indigo-100/30 dark:border-indigo-900/20 rounded-xl space-y-1 text-left w-full">
               <div className="flex items-center gap-1.5 text-[9px] font-extrabold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
                 <Heart className="w-3 h-3 text-rose-500 fill-rose-500" />
                 <span>診断分析</span>
               </div>
-              <p className="text-[10px] font-bold text-slate-650 dark:text-slate-350 leading-relaxed">
+              <p className="text-[10px] font-bold text-slate-700 dark:text-slate-400 leading-relaxed">
                 {dualComment}
               </p>
             </div>

@@ -13,7 +13,6 @@ import { MetricSelector } from './components/MetricSelector';
 import { JapanMap, type MapFlashEffect } from './components/JapanMap';
 import { PrefectureDetailPanel } from './components/PrefectureDetailPanel';
 import { RankingTable } from './components/RankingTable';
-import { TopChart } from './components/TopChart';
 import { TimelineControl } from './components/TimelineControl';
 import { NewsTicker } from './components/NewsTicker';
 import { WeatherEffects } from './components/WeatherEffects';
@@ -34,6 +33,8 @@ import { estimateMonthlyCost, isColdRegion, isUrbanRegion, TROPICAL_PREF_CODE } 
 
 // 初期表示に不要な重いコンポーネントは遅延ロードする
 const CsvUploader = lazy(() => import('./components/CsvUploader').then((m) => ({ default: m.CsvUploader })));
+// recharts (~400KB) を含むチャートは地図・ランキングの初回描画をブロックしないよう別チャンクで並行取得する
+const TopChart = lazy(() => import('./components/TopChart').then((m) => ({ default: m.TopChart })));
 const GachaModal = lazy(() => import('./components/GachaModal').then((m) => ({ default: m.GachaModal })));
 
 const DEFAULT_YEAR = 2024;
@@ -87,6 +88,10 @@ function weightsFavoring(pref: PrefectureData): MetricWeights {
   });
   return result;
 }
+
+const ChartSkeleton = () => (
+  <div className="h-full min-h-[300px] rounded-2xl bg-white/60 dark:bg-slate-900/60 border border-slate-200/50 dark:border-slate-800/50 animate-pulse" role="status" aria-label="チャートを読み込み中" />
+);
 
 function App() {
   const [showUploader, setShowUploader] = useState(false);
@@ -439,7 +444,9 @@ function App() {
             </div>
             <div className="flex-1 min-h-[300px] lg:min-h-0 flex flex-col lg:overflow-hidden">
               <ErrorBoundary label="上位5都道府県チャート" resetKey={currentMetric}>
-                <TopChart data={currentYearData} currentMetric={currentMetric} />
+                <Suspense fallback={<ChartSkeleton />}>
+                  <TopChart data={currentYearData} currentMetric={currentMetric} />
+                </Suspense>
               </ErrorBoundary>
             </div>
           </div>

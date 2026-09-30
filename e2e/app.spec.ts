@@ -119,6 +119,14 @@ test('隠しコマンド: コナミコマンドでレトロモードに切り替
 test('ページ幅からはみ出す要素がない (横スクロールが発生しない)', async ({ page }) => {
   await page.goto('./');
   await expect(rankingRows(page)).toHaveCount(47);
-  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
-  expect(overflow).toBeLessThanOrEqual(0);
+  const report = await page.evaluate(() => {
+    const overflow = document.documentElement.scrollWidth - window.innerWidth;
+    // 失敗時の診断用: ビューポート右端を越えている要素を列挙する
+    const offenders = [...document.querySelectorAll<HTMLElement>('body *')]
+      .filter((el) => el.getBoundingClientRect().right > window.innerWidth + 1 && getComputedStyle(el).position !== 'fixed')
+      .slice(0, 5)
+      .map((el) => `${el.tagName.toLowerCase()}.${String(el.className).slice(0, 60)} → right=${Math.round(el.getBoundingClientRect().right)}`);
+    return { overflow, offenders };
+  });
+  expect(report.overflow, report.offenders.join('\n')).toBeLessThanOrEqual(0);
 });

@@ -129,7 +129,7 @@ export const TimelineControl: React.FC<TimelineControlProps> = ({
                   onClick={() => onYearChange(y)}
                   className={`cursor-pointer transition-all duration-200 flex flex-col items-center ${
                     isSelected
-                      ? 'text-indigo-650 dark:text-indigo-450 font-black scale-110'
+                      ? 'text-indigo-700 dark:text-indigo-500 font-black scale-110'
                       : 'hover:text-slate-600 dark:hover:text-slate-300'
                   }`}
                   title={`${y}年`}

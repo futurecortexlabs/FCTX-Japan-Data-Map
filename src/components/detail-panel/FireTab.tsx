@@ -32,7 +32,7 @@ export const FireTab: React.FC<FireTabProps> = ({ prefecture, onDecide }) => {
           <Flame className="w-4 h-4 text-rose-500" />
           UTOPIA FIRE SIMULATOR
         </h3>
-        <p className="text-xs text-slate-600 dark:text-slate-350 mb-4 leading-relaxed">
+        <p className="text-xs text-slate-600 dark:text-slate-400 mb-4 leading-relaxed">
           現在の東京圏での生活を続ける場合と、{prefecture.prefName}へ移住した場合の35年間の資産推移シミュレーションです。
         </p>
 

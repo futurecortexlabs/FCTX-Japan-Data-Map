@@ -88,13 +88,14 @@ flowchart LR
 | 項目 | Before | After |
 | --- | --- | --- |
 | 日本地図 GeoJSON | 13.4 MB (gzip 1.23 MB) | **1.1 MB (gzip 334 KB)** ― 約 1/4 の転送量 |
-| 本番ビルド時間 | 5.6 s | **0.8 s** |
+| 初回ロードの JS (gzip) | 約 320 KB | **約 208 KB** ― チャートライブラリ (113 KB) を遅延ロード化 |
+| 本番ビルド時間 | 5.6 s | **0.5 s** |
 | マウス移動時の React 再レンダー | 毎イベントで App 全体 | **0 回** |
 | ウェイト変更時の Worker | 毎回 破棄 → 再生成 | **1 インスタンスを再利用** |
 
 GeoJSON は `scripts/optimize-geojson.mjs` で最適化しています（座標精度 4 桁 ≒ 11m への丸め → Douglas–Peucker 法による単純化 → 極小離島の除去 → minify）。丸めを単純化の前に行うことで、隣接県の共有境界点が同じ座標に揃い、境界の隙間を防いでいます。
 
-加えて `React.lazy` によるモーダル類の遅延ロードと、ベンダーチャンク分割（React / Leaflet / Recharts / アニメーション）でキャッシュ効率を高めています。
+加えて `React.lazy` でモーダル類・チャート・FIRE タブを遅延ロードし、ベンダーチャンク（React / Leaflet / Recharts / アニメーション）を分割してキャッシュ効率を高めています。チャンク分割は Rolldown の `codeSplitting.groups` を優先度付きで使い、パッケージ名の完全一致で割り当てています（部分一致だと recharts 専用の依存が React 側に混ざり、遅延ロードのはずの 400 KB のチャートチャンクが初回に preload されていました）。
 
 ---
 

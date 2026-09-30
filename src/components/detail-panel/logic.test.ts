@@ -23,6 +23,7 @@ import {
   rankQuizCandidates,
   resolveDetailTab,
   scoreToProgressWidth,
+  toDisplayPoints,
 } from './logic';
 
 const pref = (overrides: Partial<PrefectureData>): PrefectureData => ({
@@ -363,5 +364,21 @@ describe('25年推移グラフの補助関数', () => {
     expect(formatTrendLabel(1500)).toBe('1.5k');
     expect(formatTrendLabel(1000)).toBe((1000).toLocaleString(undefined, { maximumFractionDigits: 0 }));
     expect(formatTrendLabel(42.4)).toBe('42');
+  });
+});
+
+describe('toDisplayPoints', () => {
+  it('偏差値の外れ値を 0〜100 点に収めて整数化する', () => {
+    expect(toDisplayPoints(-13.4)).toBe(0);
+    expect(toDisplayPoints(112.6)).toBe(100);
+    expect(toDisplayPoints(57.5)).toBe(58);
+  });
+});
+
+describe('computeDuel (欠損値の扱い)', () => {
+  it('偏差値 0 は欠損扱いせず、そのまま比較に使う', () => {
+    const base = { year: 2024, prefName: 'x' };
+    const result = computeDuel({ ...base, prefCode: 1, landPriceScore: 0 }, { ...base, prefCode: 2, landPriceScore: 40 });
+    expect(result.categories[0]).toMatchObject({ p1: 0, p2: 40 });
   });
 });
